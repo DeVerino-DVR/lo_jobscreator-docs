@@ -21,7 +21,7 @@ A registered extension may contribute, **without restart of the core**:
 | `actions` | Adds entries to the **Actions** tab of every entity that matches the type filter. Triggers a `hook` when used in-game. |
 | `interactionTypes` | New entry in the interaction-type combobox of `InteractionEditor`. |
 | `interactionSchemas` | Custom field renderer for an interaction of that type. |
-| `uiSections` | A new tab inside the entity editor (per `typeKey` filter) with a custom form that persists JSON into the entity. |
+| `uiSections` | A new tab inside the entity editor (per `typeKey` filter) with a custom form that persists JSON into the entity. Supports both built-in fields and **custom HTML/JS UI** via [iframe](/extensions/custom-ui). |
 | `locales` | FR/EN/etc. strings shipped with the extension. |
 
 ## Persistence model

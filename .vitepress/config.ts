@@ -120,6 +120,7 @@ export default defineConfig({
         {
           text: 'Going further',
           items: [
+            { text: 'Custom UI (iframe)', link: '/extensions/custom-ui' },
             { text: 'Reading data at runtime', link: '/extensions/runtime' },
             { text: 'Lifecycle & hot reload', link: '/extensions/lifecycle' },
             { text: 'Best practices', link: '/extensions/best-practices' },

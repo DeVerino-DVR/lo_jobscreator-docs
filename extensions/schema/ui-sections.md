@@ -47,7 +47,8 @@ uiSections = {
 | `icon` | string | Optional FontAwesome class. |
 | `typeKey` | string | Entity-type filter. Defaults to the extension's top-level `typeKey`. |
 | `description` | string | Shown above the form. |
-| `schema.fields` | array | List of fields. |
+| `schema.fields` | array | List of fields. Mutually exclusive with `iframe`. |
+| `iframe` | table | Custom HTML/JS UI (React/Vue/anything). See [Custom UI](/extensions/custom-ui). |
 
 ## Supported field types
 
