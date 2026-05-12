@@ -1,28 +1,46 @@
 # Backups & restore
 
-See [Guide / Backups](/guide/backups) for the concepts.
+The full panel state, exported to a single JSON file.
 
-This page is the in-panel walkthrough.
+## What's in a backup
 
-## Browsing snapshots
+- Every job and gang (with grades, salaries, regions, blips, allowed actions).
+- Every interaction (job, gang, public).
+- Every custom blip, ped, prop, marker.
+- Every vehicle and horse in the catalogues.
+- Every item created from the Items tab (with usable effects).
+- The `lo_settings` overlay (the part of `config.lua` that's been edited in the panel).
 
-Each row shows: created date, author character, optional note, scope
-(global / single section).
+## What's NOT in a backup
 
-Hover any row for a **Restaurer** button.
+- The audit log (it's history, not state).
+- `vorp_inventory` data outside the items the panel created.
+- Anything from other resources.
 
-## Creating a snapshot
+## Exporting
 
-**+ Nouvelle sauvegarde** opens a modal:
+**Backups** tab → **Export**. Downloads a `.json` file via the browser save dialog.
 
-- **Name** — required.
-- **Note** — optional, free text.
-- **Scope** — `global` (everything) or one of the section keys
-  (`jobs`, `gangs`, `publicInteractions`, `items`, `customBlips`,
-  `customPeds`, `settings`).
+## Importing
 
-## Restoring
+**Backups** tab → **Import** → pick the file. The panel diffs against current state:
 
-Confirm modal lists exactly what will be replaced. The script
-**auto-creates a safety snapshot** of the current state before doing
-anything destructive — so an undo is always one click away.
+- **Create** — items that exist in the backup but not on the server.
+- **Replace** — items that exist on both but differ.
+- **Delete** — items on the server but not in the backup.
+
+Confirm to apply. An automatic safety snapshot is taken right before applying — if the import goes wrong you can roll back.
+
+## Snapshots
+
+Every destructive operation (delete job, bulk delete, import) creates a snapshot. The **Snapshots** sub-tab lists them; you can preview and restore.
+
+## SQL-level restore
+
+If the panel itself is broken, restore from a `mysqldump` of the `lo_*` tables. The script reads them on next start.
+
+## Cadence
+
+- Daily before risky changes.
+- Weekly minimum on a live server.
+- Always before importing or restoring.

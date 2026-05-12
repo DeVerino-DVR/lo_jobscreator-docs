@@ -1,288 +1,196 @@
 # Exports
 
-The complete export surface of `lo_jobscreator`. All exports are on the
-resource `lo_jobscreator`:
+Functions exposed by `lo_jobscreator` to other resources. Call them like this:
 
 ```lua
-exports.lo_jobscreator:<ExportName>(...)
+local result = exports.lo_jobscreator:NameOfTheExport(arguments)
 ```
 
-Exports are grouped below by domain.
+Server-side exports are called from server scripts, client-side from client scripts. Shared exports work on both sides — but `GetCreatedJobs` / `GetCreatedGangs` / `GetJobInteractions` / `GetGangInteractions` / `GetPublicInteractions` only return data **server-side** (the client gets a synced subset by other means).
 
-## Extension API
+---
 
-::: tip
-See the dedicated [Extensions API](/extensions/overview) section for the
-full guide.
-:::
+## Jobs & gangs (shared)
 
-### `RegisterExtension(id, config)` — server
-
-Register or replace an extension. Idempotent. Auto-removed on
-`onResourceStop`. Returns `true` on success, `false, error` on failure.
+### `getJobIsBoss(jobName, grade)` → `boolean`
+Is this grade the boss grade of this job?
 
 ```lua
-exports.lo_jobscreator:RegisterExtension('your_ext', { … })
-```
-
-### `UnregisterExtension(id)` — server
-
-Manual removal. Restores `Config.Items`, `Config.Actions`,
-`Config.InteractionTypes` to their pre-registration state and pushes an
-`extensionsChanged` snapshot to admin clients.
-
-```lua
-exports.lo_jobscreator:UnregisterExtension('your_ext')
-```
-
-### `ListExtensions()` — server
-
-Returns a snapshot of the server-side extension registry. Read-only.
-
-```lua
-local registry = exports.lo_jobscreator:ListExtensions()
-```
-
-### `RegisterClientExtension(id, config)` — client
-
-Register **local** handler functions for an extension's actions. Functions
-cannot cross the network — this is the client-side counterpart to
-`RegisterExtension`.
-
-```lua
-exports.lo_jobscreator:RegisterClientExtension('your_ext', {
-    clientHandlers = { OnFeature_<hook> = function(...) end }
-})
-```
-
-### `GetClientExtensions()` — client
-
-Returns the client-side handler registry. Read-only.
-
-## Job & gang queries
-
-Loaded by `shared/main.lua`, available on both sides except where noted.
-
-### `GetCreatedJobs()` — server
-
-Returns the entire `CreatedJobs` table.
-
-```lua
-local jobs = exports.lo_jobscreator:GetCreatedJobs()
-for name, job in pairs(jobs) do print(name, job.label) end
-```
-
-### `GetCreatedGangs()` — server
-
-Returns the entire `CreatedGangs` table.
-
-### `GetJobLabel(name)` — shared
-
-Returns the display label of a job (or `name` if unknown).
-
-```lua
-local label = exports.lo_jobscreator:GetJobLabel('doctor')  -- "Doctor"
-```
-
-### `GetGangLabel(name)` — shared
-
-Same for gangs.
-
-### `IsGradeBoss(entityType, name, grade)` — shared
-
-`entityType` = `'job'` or `'gang'`. Returns `true` if the grade has
-`isboss = true`.
-
-```lua
-local boss = exports.lo_jobscreator:IsGradeBoss('job', 'doctor', 4)
-```
-
-### `getJobIsBoss(jobName, grade)` — shared
-
-Convenience shortcut to `IsGradeBoss('job', jobName, grade)`.
-
-### `getGangIsBoss(gangName, grade)` — shared
-
-Same for gangs.
-
-### `GetGradeSalary(entityType, name, grade)` — shared
-
-Returns the salary `payment` field for the given grade.
-
-### `getJobSalary(jobName, grade)` — shared
-
-Shortcut to `GetGradeSalary('job', jobName, grade)`.
-
-### `getGangSalary(gangName, grade)` — shared
-
-Shortcut to `GetGradeSalary('gang', gangName, grade)`.
-
-## Interactions
-
-### `GetJobInteractions(jobName)` — server
-
-Returns all interactions belonging to the job.
-
-```lua
-local ints = exports.lo_jobscreator:GetJobInteractions('doctor')
-for _, int in ipairs(ints or {}) do print(int.id, int.interaction_type) end
-```
-
-### `GetGangInteractions(gangName)` — server
-
-Same for gangs.
-
-### `GetPublicInteractions()` — server
-
-Returns the entire `PublicInteractions` table.
-
-## Job-type analytics
-
-Live counters of connected players per job type. Updated when players
-join/leave and refreshed every 15 s.
-
-### `GetJobTypes()` — server
-
-Returns a map `{ [jobType] = { jobName1, jobName2, … } }`.
-
-```lua
-local types = exports.lo_jobscreator:GetJobTypes()
--- { leo = {'sheriff', 'marshal'}, medic = {'doctor'}, … }
-```
-
-### `GetCountByType(jobType)` — server
-
-Number of currently-connected players with a job of this type.
-
-```lua
-local cops = exports.lo_jobscreator:GetCountByType('leo')
-```
-
-### `GetAllJobTypeCounts()` — server
-
-Returns the full counter table `{ [jobType] = count }`.
-
-### `GetPlayersByType(jobType)` — server
-
-Returns an array of server ids of all connected players with the given
-job type.
-
-```lua
-local medicSrcs = exports.lo_jobscreator:GetPlayersByType('medic')
-for _, src in ipairs(medicSrcs) do
-    TriggerClientEvent('your:alert', src, 'Medical emergency')
+local job   = exports.vorp_core:getUser(source).getUsedCharacter.job
+local grade = exports.vorp_core:getUser(source).getUsedCharacter.jobGrade
+if exports.lo_jobscreator:getJobIsBoss(job, grade) then
+    -- open the boss menu
 end
 ```
 
-## Duty system
+### `getGangIsBoss(gangName, grade)` → `boolean`
+Same, for gangs.
 
-A duty entry is keyed by `(playerSrc, jobName)` — a player can be on duty
-for several jobs at once (e.g. multi-job setup).
+### `getJobSalary(jobName, grade)` → `number`
+Salary configured for that grade.
 
-### `GetDuty(src, job)` — server
+### `getGangSalary(gangName, grade)` → `number`
+Same, for gangs.
 
-Returns boolean (`true` = on duty for the given job).
+### `IsGradeBoss(kind, name, grade)` → `boolean`
+Generic version. `kind` is `'job'` or `'gang'`.
 
-### `SetDuty(src, duty, job)` — server
+### `GetGradeSalary(kind, name, grade)` → `number`
+Generic version of `getJobSalary` / `getGangSalary`.
 
-Set the duty status. Triggers the `lo_jobscreator:client:UpdateDutyStatus`
-client event so the player's HUD updates.
+### `GetJobLabel(jobName)` → `string`
+Display label (falls back to the technical name if unknown).
 
+### `GetGangLabel(gangName)` → `string`
+Same, for gangs.
+
+### `GetCreatedJobs()` → `table` *(server-side)*
+All jobs as `{ [name] = { name, label, data = { type, grades, blip, actions, regions, ... } } }`.
+
+### `GetCreatedGangs()` → `table` *(server-side)*
+Same, for gangs.
+
+### `GetJobInteractions(jobName)` → `table` *(server-side)*
+Interactions attached to that job.
+
+### `GetGangInteractions(gangName)` → `table` *(server-side)*
+Interactions attached to that gang.
+
+### `GetPublicInteractions()` → `table` *(server-side)*
+All public interactions.
+
+---
+
+## Job-type counters (client + server)
+
+A *job type* is the category set on each job (`leo`, `medic`, `fire`, `gouv`, …). These count **online players** currently in any job of that type.
+
+### `GetCountByType(jobType)` → `number`
 ```lua
-exports.lo_jobscreator:SetDuty(source, true, 'doctor')
+local cops = exports.lo_jobscreator:GetCountByType('leo')
+if cops < 2 then
+    -- not enough cops, cancel the robbery
+end
 ```
 
-### `ToggleDuty(src, job)` — server
-
-Toggle and return the new state.
-
-### `IsDutyActive(src, job)` — server
-
-Alias for `GetDuty`.
-
-### `RemoveDuty(src)` — server
-
-Wipe all duty entries for a player (called automatically on
-`playerDropped`).
-
-### `GetDutyList()` — server
-
-Returns the entire `{ [src] = { [job] = bool } }` table.
-
-## Personal action menu
-
-### `OpenPersonalMenu()` — client
-
-Force-open the personal action menu (default keybind: `F7`).
-
+### `GetAllJobTypeCounts()` → `table<string, number>`
 ```lua
-exports.lo_jobscreator:OpenPersonalMenu()
+local counts = exports.lo_jobscreator:GetAllJobTypeCounts()
+-- counts.leo, counts.medic, ...
 ```
 
-Useful if you bind your own key in another resource.
-
-## Witness / dispatch system
-
-### `dispatchAlert(coords, type)` — client
-
-Send a witness alert to the appropriate dispatch (LEO/medic/etc.).
-
+### `GetPlayersByType(jobType)` → `number[]` (server ids)
 ```lua
-exports.lo_jobscreator:dispatchAlert(GetEntityCoords(PlayerPedId()), 'robbery')
+-- server: send a message to every online medic
+for _, src in ipairs(exports.lo_jobscreator:GetPlayersByType('medic')) do
+    TriggerClientEvent('chat:addMessage', src, { args = { 'EMS', 'Patient down.' } })
+end
 ```
 
-### `GetAlertHistory()` — client
+### `GetJobTypes()` → `string[]` *(server-side)*
+Every job type currently in use.
 
-Returns the **local** alert history (last alerts the player received as a
-dispatcher).
+---
 
-### `GetActiveAlerts()` — client
+## Duty (server)
 
-Returns alerts currently active (not yet handled) on this client.
+### `IsDutyActive(src, jobName)` → `boolean`
+Is this player on duty for that job?
 
-## Quick reference table
+### `GetDuty(src, jobName)` → `boolean`
+Alias for `IsDutyActive`.
 
-| Export | Side | Purpose |
-|---|---|---|
-| `RegisterExtension` | server | Extension API |
-| `UnregisterExtension` | server | Extension API |
-| `ListExtensions` | server | Extension API |
-| `RegisterClientExtension` | client | Extension API |
-| `GetClientExtensions` | client | Extension API |
-| `GetCreatedJobs` | server | All jobs |
-| `GetCreatedGangs` | server | All gangs |
-| `GetJobLabel` | shared | Lookup label |
-| `GetGangLabel` | shared | Lookup label |
-| `IsGradeBoss` | shared | Grade-flag check |
-| `getJobIsBoss` | shared | Shortcut |
-| `getGangIsBoss` | shared | Shortcut |
-| `GetGradeSalary` | shared | Grade payment |
-| `getJobSalary` | shared | Shortcut |
-| `getGangSalary` | shared | Shortcut |
-| `GetJobInteractions` | server | Per job |
-| `GetGangInteractions` | server | Per gang |
-| `GetPublicInteractions` | server | Public list |
-| `GetJobTypes` | server | type → jobs[] |
-| `GetCountByType` | server | Connected count |
-| `GetAllJobTypeCounts` | server | Full counter |
-| `GetPlayersByType` | server | src[] |
-| `GetDuty` | server | Per (src, job) |
-| `SetDuty` | server | |
-| `ToggleDuty` | server | |
-| `IsDutyActive` | server | Alias |
-| `RemoveDuty` | server | Wipe a player |
-| `GetDutyList` | server | Full table |
-| `OpenPersonalMenu` | client | Force open |
-| `dispatchAlert` | client | Send alert |
-| `GetAlertHistory` | client | Local history |
-| `GetActiveAlerts` | client | Live alerts |
+### `SetDuty(src, onDuty, jobName)`
+Force on/off duty. Note: `onDuty` is the **second** argument.
 
-## Stability
+### `ToggleDuty(src, jobName)` → `boolean` (new state)
+Flip on / off.
 
-Only the **Extension API** exports (`RegisterExtension`,
-`UnregisterExtension`, `ListExtensions`, `RegisterClientExtension`,
-`GetClientExtensions`) are part of the formal [public contract](/extensions/contract).
+### `GetDutyList()` → `table<src, table<job, bool>>`
+Every connected player's duty state.
 
-The other exports are documented and stable in practice but may change in
-a future major version. Use them freely; just check the changelog when
-upgrading.
+### `RemoveDuty(src, jobName)`
+Clear the player's duty for a job (also done automatically on disconnect).
+
+```lua
+-- a job command that only works while on duty
+RegisterCommand('police_action', function(source)
+    if not exports.lo_jobscreator:IsDutyActive(source, 'police') then
+        return
+    end
+    -- ...
+end)
+```
+
+---
+
+## Custom interaction types (server)
+
+See [Custom interaction types](/reference/custom-types) for the full guide.
+
+### `RegisterInteractionType(spec)`
+Register a new interaction type that shows up in the panel and fires your events.
+
+### `UnregisterInteractionType(typeId)`
+Remove it.
+
+### `GetExternalInteractionTypes()` → `table`
+Everything currently registered from external resources.
+
+---
+
+## Dispatch (client)
+
+### `dispatchAlert(coords, type, extra?)`
+Fire a dispatch alert. Routed to jobs based on type + region. See [Dispatch](/guide/dispatch).
+
+```lua
+-- new form
+exports.lo_jobscreator:dispatchAlert(GetEntityCoords(PlayerPedId()), 'robbery', {
+    title = 'Bank robbery',
+    message = 'Suspect armed, fleeing north.',
+    jobsToAlert = { 'police', 'sheriff' },
+})
+
+-- legacy form
+exports.lo_jobscreator:dispatchAlert({
+    coords = vector3(...),
+    type = 'theft',
+    title = '...',
+    message = '...',
+    jobs = { 'police' },
+})
+```
+
+### `OpenDispatchMenu()`
+Open the built-in dispatch menu (list of active alerts).
+
+### `GetActiveAlerts()` → `table`
+Alerts currently active.
+
+### `GetAlertHistory()` → `table`
+Past alerts (capped, in-memory).
+
+---
+
+## Personal action menu (client)
+
+### `OpenPersonalMenu()`
+Open the per-player action menu programmatically.
+
+---
+
+## Usable-item effects (client)
+
+Used internally when a player consumes an item, but you can call them directly too (e.g. a custom drug script):
+
+| Export | What |
+|---|---|
+| `UsableToggleEffect(effectId, duration, progressive)` | Play / extend a screen FX (or a preset) |
+| `UsableApplyPreset(presetName, duration)` | Apply a preset from `Config.UsablePresets` |
+| `UsableSetEffectStrength(effectName, strength)` | 0.0 – 1.0 |
+| `UsableStopAllEffects()` | Clear everything |
+| `UsableAddDrunkEffect(level)` | 0 = sober, higher = drunker |
+| `UsableApplyDrunkGait(durationMs, strength)` | Wobbly walk |
+| `UsableStartCamShake(intensity)` | Camera shake |
+| `UsableStopCamShake()` | Stop it |

@@ -1,93 +1,103 @@
 # SQL schema
 
-All tables are created automatically on first boot from `Config.SQL`. The
-table names are prefixed with `lo_` to avoid collisions with framework
-tables.
+All tables are created automatically on first start by the script.
 
-## `lo_jobs`
+## Tables
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int auto-increment | PK |
-| `name` | varchar(50) | unique key, snake_case |
-| `label` | varchar(100) | display label |
-| `data` | longtext | JSON blob: grades, type, payment, sections, …|
-| `created_at` | timestamp | default `CURRENT_TIMESTAMP` |
-| `updated_at` | timestamp | on update `CURRENT_TIMESTAMP` |
+| Table | Holds |
+|---|---|
+| `lo_jobs` | Jobs (`id`, `name`, `label`, `data` JSON, timestamps) |
+| `lo_gangs` | Gangs (same shape) |
+| `lo_job_interactions` | Interactions attached to a job |
+| `lo_gang_interactions` | Interactions attached to a gang |
+| `lo_public_interactions` | Public interactions |
+| `lo_daily_uses` | Daily counter per `use_key` (per player + interaction) |
+| `lo_total_uses` | Lifetime counter per `use_key` |
+| `lo_settings` | Live-edited overrides of `config.lua` |
+| `lo_audit_log` | Every admin write |
+| `lo_custom_blips` | Custom blips |
+| `lo_custom_peds` | Custom peds |
+| `lo_custom_props` | Custom props |
+| `lo_custom_markers` | Custom 3D markers |
+| `lo_custom_vehicles` | Vehicles catalogue |
+| `lo_custom_horses` | Horses catalogue |
+| `lo_item_usables` | Usable-item effect config for each item |
 
-## `lo_gangs`
+## Common shape
 
-Same shape as `lo_jobs`. Skipped if `Config.Features.gangs = false`.
+Most tables follow this pattern:
 
-## `lo_job_interactions` / `lo_gang_interactions`
+```sql
+CREATE TABLE lo_xxx (
+    id          INT          AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(64)  UNIQUE,
+    label       VARCHAR(128),
+    data        LONGTEXT,        -- JSON payload
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int auto-increment | PK |
-| `job_name` (or `gang_name`) | varchar(50) | FK to parent table, ON DELETE CASCADE |
-| `interaction_type` | varchar(50) | e.g. `stash`, `shop`, `farm` |
-| `coords` | longtext | JSON `{x, y, z, h}` |
-| `data` | longtext | JSON blob, depends on type |
-| `created_at` / `updated_at` | timestamps | |
+The `data` JSON column is where most of the structure lives — grades, regions, blip config, prop / ped config, etc. The script handles parsing.
 
-## `lo_public_interactions`
+## Use-key counters
 
-Same as above but no FK — public interactions belong to no entity.
+`lo_daily_uses` and `lo_total_uses` share the same shape:
 
-## `lo_settings`
+```sql
+CREATE TABLE lo_daily_uses (
+    id        INT AUTO_INCREMENT PRIMARY KEY,
+    use_key   VARCHAR(128) UNIQUE,
+    use_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
 
-Key/value store for everything edited in the **Configuration serveur** tab.
+`use_key` encodes the player identifier + the interaction id, so there's one row per (player, interaction) pair.
 
-| Column | Type | Notes |
-|---|---|---|
-| `key` | varchar(64) | PK |
-| `value` | longtext | JSON-encoded |
-| `updated_at` | timestamp | |
+## Audit
 
-Common keys: `Paycheck`, `Logs`, `Features`, `Performance`, `DefaultGrades`,
-`PermissionGroup`, `ButtonPermissions`, `EntityTypes`, `InteractionTypes`,
-`Actions`.
+```sql
+CREATE TABLE lo_audit_log (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    ts          BIGINT NOT NULL,         -- UNIX ms
+    staff_id    VARCHAR(64),
+    staff_name  VARCHAR(64),
+    action      VARCHAR(32),             -- create | update | delete | import | …
+    target_type VARCHAR(32),             -- job | gang | interaction | item | …
+    target_name VARCHAR(128),
+    details     LONGTEXT                 -- JSON
+);
+```
 
-## `lo_audit_log`
+## Backup / restore at the SQL level
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int auto-increment | PK |
-| `ts` | bigint | unix ms |
-| `staff_id` | int | character id |
-| `staff_name` | varchar(100) | display name |
-| `action` | varchar(32) | `create`, `update`, `delete`, … |
-| `target_type` | varchar(32) | `job`, `gang`, `interaction`, … |
-| `target_name` | varchar(255) | |
-| `details` | longtext | JSON diff |
+To migrate to another server:
 
-## `lo_daily_uses` / `lo_total_uses`
+```sh
+mysqldump -u user -p mydb lo_jobs lo_gangs lo_job_interactions lo_gang_interactions \
+    lo_public_interactions lo_settings lo_custom_blips lo_custom_peds lo_custom_props \
+    lo_custom_markers lo_custom_vehicles lo_custom_horses lo_item_usables > backup.sql
+```
 
-Per-key counters used by `dailyLimit` / `totalLimit` farm/process/sell
-mechanics.
+Import into the new DB before starting `lo_jobscreator` and you keep everything.
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int auto-increment | PK |
-| `use_key` | varchar(255) | unique, e.g. `<player>_<interactionId>_<itemName>` |
-| `use_count` | int | |
-| `created_at` / `updated_at` | timestamps | |
+The panel's own JSON backup / restore is easier for day-to-day; the SQL path is for full disaster recovery.
 
-`lo_daily_uses` rows are pruned daily at midnight (`DATE(created_at) < CURDATE()`).
+## Reset
 
-## `lo_custom_blips` / `lo_custom_peds` / `lo_custom_props` / `lo_custom_markers`
+To completely wipe and start fresh (⚠️ destructive):
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int auto-increment | PK |
-| `name` | varchar(100) | display name |
-| `data` | longtext | JSON blob |
-| `created_at` / `updated_at` | timestamps | |
+```sql
+DROP TABLE
+    lo_jobs, lo_gangs,
+    lo_job_interactions, lo_gang_interactions, lo_public_interactions,
+    lo_daily_uses, lo_total_uses,
+    lo_settings, lo_audit_log,
+    lo_custom_blips, lo_custom_peds, lo_custom_props, lo_custom_markers,
+    lo_custom_vehicles, lo_custom_horses,
+    lo_item_usables;
+```
 
-Used by the **Custom Blips** / **Peds** modules of the panel.
-
-## Backups
-
-The **Backups** tab stores snapshot ZIPs (or JSON exports) on the server
-filesystem (`resources/lo_jobscreator/backups/`) — there is no SQL table
-for them.
+The tables are recreated on next start.

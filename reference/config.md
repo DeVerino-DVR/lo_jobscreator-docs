@@ -1,148 +1,116 @@
 # `config.lua`
 
-The `config.lua` file is the **boot-time defaults**. Most of these values
-are persisted to the `lo_settings` SQL table on first boot and edited
-live from the **Configuration serveur** tab in the admin panel.
+Initial defaults. Most of these are also editable live in the panel (under **Server config**); whatever the panel saves wins on next boot, via the `lo_settings` overlay.
 
-::: warning
-Once a server has booted at least once, the in-game **Server Config** tab
-is the source of truth — editing `config.lua` will only affect a fresh
-install. To apply a change to an existing server, use the panel.
-:::
+This page lists what's in the file. Comments in the file itself describe each key in more detail.
 
 ## General
 
-| Key | Default | Purpose |
-|---|---|---|
-| `Config.Debug` | `true` | Verbose logs in server console. |
-| `Config.Command` | `'jobcreator'` | Command to open the admin menu. |
-| `Config.ActionMenuKey` | `'F7'` | Key to open the personal action menu. |
-| `Config.PromptDistance` | `1.0` | Display distance for prompts. |
-| `Config.Lang` | `'en'` | Locale, must match a file in `locales/<lang>.json`. |
-| `Config.PermissionGroup` | `{ 'admin' }` | Groups allowed to use the creator. |
-| `Config.ButtonPermissions` | `{...}` | Per-button permission overrides (empty = inherit). |
-| `Config.ImageUrl` | `nui://vorp_inventory/html/img/items/%s.png` | Item image template. |
+| Key | What |
+|---|---|
+| `Config.Debug` | Verbose console logging. |
+| `Config.LogLevel` | `'trace'` \| `'debug'` \| `'info'` \| `'warn'` \| `'error'` \| `'off'`. |
+| `Config.VersionCheck` | `{ enabled, repo, branch, updateUrl }` — checks GitHub for newer versions on boot. |
+| `Config.Command` | Chat command to open the panel. Default `'jobcreator'`. |
+| `Config.ActionMenuKey` | Key for the personal-action menu (the one referenced in your KeyMapping). |
+| `Config.Lang` | Default server language (`'en'`, `'fr'`, …). |
+| `Config.PermissionGroup` | Group(s) allowed to open the panel. String or table. |
+| `Config.ButtonPermissions` | Per-tab permissions (empty = inherit `PermissionGroup`). See [Permissions](/guide/permissions). |
+| `Config.ImageUrl` | Template URL for item images. |
+
+## Placement
+
+| Key | What |
+|---|---|
+| `Config.PlacementMode` | `'raycast'` (default) or `'gizmo'` (requires `jo_libs`). |
 
 ## Framework
 
-`Config.Framework`:
-
-- `force` — `'auto' | 'vorp' | 'redem' | 'rsg' | 'qbr' | 'rpx' | 'tpzcore' | 'frp' | 'standalone'`. Detected automatically when `'auto'`.
-- `entityExports` — per-framework table of `upsertJob` / `deleteJob` exports for jobs CRUD.
-- `inventory` — force a specific inventory provider (`vorp_inventory`, `ox_inventory`, `qb-inventory`, `rsg-inventory`, `core`).
-- `clothing` — events / exports for clothing store + wardrobe.
-- `notify` — per-framework notification event used by `NotifyClient`.
-
-See [Frameworks](/guide/frameworks) for the full breakdown.
+| Key | What |
+|---|---|
+| `Config.Framework.force` | `'auto'` \| `'vorp'` \| `'standalone'`. Override the runtime detection. |
+| `Config.Framework.entityExports` | Optional: route job / gang upsert / delete to a third-party resource. |
+| `Config.Framework.clothing` | Events fired by `clothing_store` / `clothing_wardrobe` interactions. |
+| `Config.Framework.notify` | Optional notification event override. |
 
 ## UI providers
 
-| Key | Values | Notes |
-|---|---|---|
-| `Config.AllowInGamePreferences` | bool | If true, admins can change providers in-game. |
-| `Config.DefaultMenuProvider` | `'auto' \| 'ox_lib' \| 'vorp' \| 'jo_libs' \| 'native'` | Menu provider. |
-| `Config.DefaultInputProvider` | same | Input prompts. |
-| `Config.DefaultProgressProvider` | same | Progress bars. |
-| `Config.DefaultInteractionMode` | `'target' \| 'prompt'` | World interactions. |
+| Key | What |
+|---|---|
+| `Config.AllowInGamePreferences` | Let non-admin players change their own providers / language. |
+| `Config.DefaultMenuProvider` | `'auto'` \| `'ox_lib'` \| `'vorp'` \| `'jo_libs'` \| `'native'`. |
+| `Config.DefaultInputProvider` | Same set. |
+| `Config.DefaultProgressProvider` | Same set. |
+| `Config.DefaultInteractionMode` | `'target'` (ox_target) or `'prompt'` (floating prompts). |
 
-## Features
+## Features (tab toggles)
 
-`Config.Features` toggles entire sections of the UI / behaviour:
+`Config.Features` — set any of these to `false` to hide the tab entirely:
 
-```lua
-Config.Features = {
-    jobs = true, gangs = false, publicActions = true,
-    itemCreator = true, customBlips = true, customPeds = true,
-    staffTools = true, preferences = true,
-    personalmenu = true,
-}
-```
+`jobs`, `gangs`, `publicActions`, `itemCreator`, `customBlips`, `customPeds`, `customVehicles`, `customHorses`, `staffTools`, `preferences`, `personalmenu`.
 
-Disabling `gangs = false` skips creation of the gang SQL tables and hides
-the gang UI.
+## Logging (Discord)
 
-## Logs
-
-```lua
-Config.Logs = { enabled = true, webhook = '', servername = 'MyServer', color = 3447003 }
-```
-
-Built-in Discord webhook — leave `webhook = ''` for console-only.
+| Key | What |
+|---|---|
+| `Config.Logs.enabled` | Mirror audit log to Discord. |
+| `Config.Logs.webhook` | Webhook URL. |
+| `Config.Logs.servername` | Embed `author.name`. |
+| `Config.Logs.color` | Embed color. |
 
 ## Paycheck
 
-```lua
-Config.Paycheck = {
-    enabled = true,
-    interval = 1000 * 60 * 30,
-    log = true,
-    banking = { resource = 'lo_banking', fn = 'addBankMoney' },
-    bossAccount = { resource = 'lo_bossmenu', getAccountFn = 'GetAccount', removeMoneyFn = 'RemoveMoney' },
-    gangAccount = { resource = 'lo_gangmenu', getAccountFn = 'GetAccount', removeMoneyFn = 'RemoveMoney' },
-    governmentTypes = { 'leo', 'medic', 'gouv' },
-}
-```
-
-## Keys
-
-`Config.Keys` — vorp_lib prompt letter + RedM control hash for cancel /
-complete actions. Aligns the HUD prompt with the actual key.
+| Key | What |
+|---|---|
+| `Config.Paycheck.enabled` | Master on/off. |
+| `Config.Paycheck.interval` | ms between payments. |
+| `Config.Paycheck.log` | Log every paycheck to audit + Discord. |
+| `Config.Paycheck.banking` | `{ enabled, resource, fn }` to route money into a banking resource. |
+| `Config.Paycheck.bossAccount` | `{ resource, getAccountFn, removeMoneyFn }` — read / debit a job's business account. |
+| `Config.Paycheck.gangAccount` | Same, for gangs. |
+| `Config.Paycheck.governmentTypes` | Job types paid by the state (no account check). |
 
 ## Performance
 
-```lua
-Config.Performance = {
-    markerRenderDistance = 30.0,
-    pedRenderDistance = 50.0,
-    maxRenderedPeds = 25,
-    propRenderDistance = 50.0,
-    maxRenderedProps = 30,
-    targetRefreshInterval = 1000,
-    updateDebounce = 2000,
-    pedFaceOnApproach = true,
-    pedFaceDistance = 3.0,
-}
-```
+`Config.Performance`:
 
-Tune for 600+ players.
+- `markerRenderDistance` — meters
+- `pedRenderDistance`, `maxRenderedPeds`
+- `propRenderDistance`, `maxRenderedProps`
+- `targetRefreshInterval` — ms, `ox_target` rescan
+- `connectedPlayerRefreshInterval` — ms, fallback job re-read
+- `updateDebounce` — ms, panel → clients sync debounce
+- `pedFaceOnApproach`, `pedFaceDistance`
 
-## Default grades
+See [Performance](/guide/performance) for recommended values.
 
-```lua
-Config.DefaultGrades = {
-    ['0'] = { name = 'Recrue',  payment = 0 },
-    ['1'] = { name = 'Employe', payment = 0 },
-    ['2'] = { name = 'Manager', payment = 0 },
-    ['3'] = { name = 'Co-Patron', payment = 0 },
-    ['4'] = { name = 'Patron',  payment = 0, isboss = true },
-}
-```
+## Defaults
 
-Applied when creating a new job/gang.
+| Key | What |
+|---|---|
+| `Config.DefaultGrades` | Auto-created grades for a new job (`{ '0' = {...}, '1' = {...}, … }`). |
+| `Config.EntityTypes` | Available job categories (`leo`, `medic`, `fire`, `gouv`, …). |
+| `Config.InteractionTypes` | The built-in interaction types' metadata (`label`, `icon`, `isPublic`). |
+| `Config.Actions` | Default personal-action templates. |
 
-## Entity types
+## Towns & regions
 
-`Config.EntityTypes` — array of `{ value, label }` shown in the entity
-type combobox. Built-in: `none`, `leo`, `medic`, `gouv`, `job`, `gang`,
-`craft`, `farm`, `hunt`, `fish`, `trade`.
+- `Config.Towns` — list of towns (`name`, `city`, `region`, `icon`).
+- `Config.Districts` — list of districts (same shape).
+- `Config.JobRegions` — defaults: which regions a known job covers (loaded into new jobs on creation).
 
-## Interaction types
+## Catalogues
 
-`Config.InteractionTypes` — built-in interaction types and their public
-flag. See [Interaction types](/reference/interaction-types).
+- `Config.AvailableMarkers` — the 3D markers admins can pick from.
+- `Config.PopularBlips` — curated blip list for the blip picker.
+- `Config.BlackListedStorageItems` — items that can't be put in a stash.
 
-## Personal actions
+## Item images
 
-`Config.Actions` — built-in personal actions (`handcuff`, `search`,
-`revive`, `heal`, `repair`, `fine`, `escort`, `putinvehicle`, `pullout`,
-`bills`, `dispatch`, `duty`). See [Hooks](/reference/hooks).
+| Key | What |
+|---|---|
+| `Config.ItemImagePath` | Absolute path to `vorp_inventory/html/img/items/`. Required if your VORP install is under a `[brackets]` folder and image uploads fail. |
 
-## SQL
+## Keys
 
-`Config.SQL` — the `CREATE TABLE` statements applied on first boot. See
-[SQL schema](/reference/sql).
-
-## Towns / Districts / Markers / Blips / Stash blacklist
-
-Static data tables. Edit only if you know what you are doing — the panel
-does not consume them as live config (they are read once at boot).
+`Config.Keys` and `Config.UsableKeys` map prompt labels and game controls used by various interactions. The exact prompt labels are localized; the controls are RedM control hashes.

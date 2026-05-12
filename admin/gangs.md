@@ -1,27 +1,21 @@
-# Gangs module
+# Gangs
 
-Identical to the [Jobs module](/admin/jobs) but stored in `lo_gangs` and
-tied to `character.gang` / `character.ganggrade`.
+Same shape as [Jobs](/admin/jobs) — separate tab because gangs are stored in their own table and applied to a separate field on the character (`character.gang`, `character.gangGrade`).
 
-## Enabling
+A player can be in **a job and a gang at the same time** — the two are independent.
 
-Off by default. Set:
+## Differences with jobs
 
-```lua
-Config.Features.gangs = true
-```
+- Gangs typically don't get a paycheck from the state. Wire `Config.Paycheck.gangAccount` if you want gang members paid from a gang account.
+- Gangs don't usually have a `duty` interaction (they're "always on") — but nothing prevents you from adding one.
+- `bossaction` works the same: the gang's boss grade unlocks it.
 
-If your framework is VORP and you want native `character.gang` support,
-follow the optional core patch in `GANG_SETUP.md` (4 files in `vorp_core`,
-all changes documented and reversible).
+## When to use a gang instead of a job
 
-## Disabling cleanly
+- The faction is criminal and you want it tracked separately from law-enforcement / civilian jobs.
+- Players need to be in a civilian job *and* a criminal faction at the same time.
+- You want a different paycheck pipeline (from a gang stash / account).
 
-Setting `gangs = false` after you have created gangs:
+## Otherwise
 
-- Hides the Gangs tab.
-- Stops loading `lo_gangs` and `lo_gang_interactions` on boot.
-- Keeps the SQL data intact (just unread).
-
-To wipe the data, drop the `lo_gangs` and `lo_gang_interactions` tables
-manually.
+Identical interface, same fields, same interactions. See [Jobs](/admin/jobs).

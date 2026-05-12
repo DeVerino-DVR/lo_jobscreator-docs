@@ -1,74 +1,44 @@
 # Interactions
 
-An **interaction** is a point on the map that the player walks up to and
-triggers a behaviour: open a stash, sell items, accept a delivery, change
-clothes, drive a horse out of a stable, …
+Every interaction is a point in the world, attached to a job, a gang or "public", with a behaviour determined by its **type**.
 
-## Built-in types
+## Anatomy of an interaction
 
-Defined in `Config.InteractionTypes` and editable live in
-**Configuration serveur → Types d'interaction**.
+When you create or edit an interaction the panel asks you for:
 
-| Type | Description | Public allowed? |
-|---|---|---|
-| `stash` | Personal/job storage | ✓ |
-| `shop` | Buy items | ✗ |
-| `farm` | Pickup an item from a node (with cooldown / daily limit) | ✓ |
-| `process` | Convert items A → items B at a workbench | ✓ |
-| `sell` | Sell items at a fixed price | ✓ |
-| `craft` | Recipe-based crafting | ✓ |
-| `phone` | Phone interactions | ✓ |
-| `duty` | Take/leave duty | ✗ |
-| `clothing_store` | Open clothing store | ✓ |
-| `clothing_wardrobe` | Open personal wardrobe | ✓ |
-| `vehicle_garage` | Spawn / store a vehicle | ✓ |
-| `delivery_point` | Pickup and dropoff routes | ✓ |
-| `bossaction` | Boss menu actions | ✗ |
-| `teleport` | Two-point teleport | ✓ |
-| `stable` | Spawn / store a horse | ✓ |
-
-## Anatomy
-
-Every interaction stores:
-
-- `type` — one of the keys above.
-- `coords` — vec3 position.
-- `prompt` — label shown to the player.
-- `data` — type-specific JSON (items, prices, animations, limits, …).
-- `permissions` — grade gate (job/gang only).
-- Optional `marker`, `ped`, `prop`, `blip`.
-
-The shape of `data` differs per type — the editor (`InteractionEditor.vue`)
-renders the right form automatically.
-
-## Editing
-
-Open any job/gang/public entry, switch to **Interactions**, click an
-interaction (or **+ Nouvelle interaction**). Coordinates can be captured
-from your current player position (the **Capturer** button).
-
-Saving is done synchronously through a `ServerCallback` — the panel waits
-for the SQL write to complete before showing the new state, so there is no
-race condition between two admins editing in parallel.
-
-## Custom interaction types
-
-Extensions can register new types — see
-[Extensions / interactionTypes](/extensions/schema/interactions). The runtime
-hook is `lo_jobscreator:server:UseInteraction`; switch on
-`interactionType == 'your_custom_type'`.
-
-## Legacy data shape
-
-Some fields used to be stored **per item** in `data.items[]` instead of at
-the root of `data`. Two helpers in `shared/main.lua` handle the fallback
-transparently:
-
-| Helper | Looks at |
+| Field | What it is |
 |---|---|
-| `ResolveAnim(d)` | `d.dict/d.anim/d.time` first, then `d.items[].animation`, then `d.recipes[].animation`. |
-| `ResolveLimits(d)` | `d.dailyLimit/d.totalLimit` first, then `d.items[].dailyLimit/totalLimit`. |
+| Type | What happens when a player triggers it (see [Interaction types](/reference/interaction-types)) |
+| Position | Where it is. You either point at it (raycast) or drag it with a 3D gizmo. |
+| Prompt / target | What players see — a floating label, an `ox_target` zone, or both. |
+| Blip | Optional map marker. |
+| Ped | Optional NPC that stands there (model, scenario, weapons…). |
+| Prop | Optional static object (table, sign, anvil…). |
+| 3D marker | Optional ground marker (visual only). |
+| Type-specific config | Fields that depend on the type (item list for shop, recipes for craft, destinations for delivery…). |
 
-Always read animations and limits through these helpers, never directly
-through `data.dict` / `data.anim` — older entities will not have the flat
-keys.
+## How players actually trigger it
+
+Two modes, set per player in **Preferences → Interaction mode**:
+
+- **Prompt** (default) — a floating text appears within range. Players press the configured key to use it.
+- **Target** — invisible until the player aims at it with `ox_target`. Requires `ox_target` running.
+
+Server owners pick the default in `Config.DefaultInteractionMode`.
+
+## Limits
+
+Each interaction can have a **daily** and/or **total** use limit (per player). When the limit is hit the interaction refuses to trigger and tells the player. Counters reset at server restart for total limits and at the daily reset hour for daily ones.
+
+## Job / grade restrictions
+
+For job and gang interactions, you can restrict who can use it by grade (e.g. only sergeant and up). For public interactions, you can optionally limit by job (e.g. only doctors can use this hospital teleport).
+
+## Placement modes
+
+When placing a ped, prop, blip or marker, two modes are available:
+
+- **Raycast** (default) — point at the ground with the mouse, scroll to rotate, click to confirm.
+- **Gizmo** — the object spawns in front of you and a 3D gizmo lets you drag and rotate it precisely. Requires `jo_libs`.
+
+Set the default in `Config.PlacementMode`. Admins can override their own choice in **Preferences**.

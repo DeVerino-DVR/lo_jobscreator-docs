@@ -1,21 +1,36 @@
 # Audit log
 
-In-panel walkthrough. See [Guide / Audit](/guide/audit) for the
-concepts.
+Every administrative write goes here. Browses the `lo_audit_log` table.
+
+## What it logs
+
+| Action | Target |
+|---|---|
+| Create / update / delete | Job, gang, grade, interaction, item, custom blip / ped / prop / marker / vehicle / horse |
+| Edit | Server config (per key) |
+| Import / restore | Backups, snapshots |
+
+## Columns
+
+- **Timestamp** — UNIX ms.
+- **Staff** — character id + name at the time of the action.
+- **Action** — `create`, `update`, `delete`, `import`, …
+- **Target type** — `job`, `gang`, `interaction`, …
+- **Target name** — the entity's technical name.
+- **Details** — JSON blob with the diff (before / after) or payload.
 
 ## Filters
 
-- By actor (`character.name`).
-- By action (`entity.update`, `interaction.delete`, `backup.restore`, …).
-- By date range.
-- By target (entity name).
-
-## Diff view
-
-Click any row to open the **before / after** JSON diff. The diff is rendered
-field-by-field, with green = added, red = removed.
+In the tab UI you can filter by staff member, action, target type, date range. Click a row to expand the JSON details.
 
 ## Discord mirror
 
-If `Config.Logs.webhook` is set, every entry is also pushed to the Discord
-channel as an embed with the diff truncated to 1500 characters.
+`Config.Logs.enabled = true` + `Config.Logs.webhook = '<url>'` posts each audit entry as a Discord embed in real time. Useful for ops channels.
+
+## Retention
+
+No automatic pruning. To trim manually:
+
+```sql
+DELETE FROM lo_audit_log WHERE ts < (UNIX_TIMESTAMP() - 30 * 86400) * 1000;
+```

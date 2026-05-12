@@ -1,73 +1,42 @@
-# First boot checklist
+# First boot
 
-A quick checklist before opening your panel for the first time.
+A short checklist for your first session in the panel.
 
-## 1. Set your admin group
+## 1. Open the panel
 
-```lua
--- config.lua
-Config.PermissionGroup = { 'admin' }
-```
+`/jobcreator` in chat. If nothing happens, your group is not in `Config.PermissionGroup`.
 
-If you forget this step you will not be able to open `/jobcreator`.
+## 2. Pick your UI providers
 
-## 2. Pick the gang feature
+Top right of the panel → **Preferences**. Choose the menu, input and progress-bar providers you want. If you have `ox_lib` installed, leave them on **Auto** — it will be picked.
 
-Gangs are off by default. Decide now:
+If you serve French players, also set **Language** to `fr`.
 
-- **Keep them off** → `Config.Features.gangs = false`. Skips the SQL tables,
-  hides the Gangs tab. Recommended if you do not need them.
-- **Turn them on** → `Config.Features.gangs = true`. Read the [`GANG_SETUP.md`](https://github.com/)
-  shipped with the resource for the optional VORP core patch.
+## 3. Create your first job
 
-## 3. Choose your default UI providers
+**Jobs** tab → **New job**:
 
-```lua
-Config.DefaultMenuProvider = 'auto'      -- ox_lib → jo_libs → vorp → native
-Config.DefaultInputProvider = 'auto'
-Config.DefaultProgressProvider = 'auto'
-Config.DefaultInteractionMode = 'target' -- 'target' (ox_target) or 'prompt'
-```
+- **Technical name** — lowercase, no spaces (e.g. `sheriff`). This is what's stored on the character.
+- **Label** — what players see.
+- **Type** — pick a category (`leo`, `medic`, `fire`, `gouv`…). It's used by dispatch and online-counter exports.
+- **Grades** — add as many as you want. Each grade has a name, salary, and an "is boss" toggle.
+- **Regions** — which areas this job dispatches to. Tick the towns / districts it covers.
+- **Blip** — optional, shows on the map.
 
-If you let players change this, leave `Config.AllowInGamePreferences = true`.
-Otherwise the values above are forced for everybody.
+Save. The job now exists.
 
-## 4. Configure your paycheck banking
+## 4. Add an interaction to that job
 
-The script can pay employees automatically every `Config.Paycheck.interval`
-ms. Wire it to your banking and boss-account exports:
+Open the job → **Interactions** → **New interaction**. Pick a type (`duty`, `stash`, `shop`, `farm`, etc.), place it in the world (raycast or 3D gizmo), fill the form.
 
-```lua
-Config.Paycheck = {
-    enabled = true,
-    interval = 1000 * 60 * 30,   -- every 30 minutes
-    banking = { resource = 'lo_banking', fn = 'addBankMoney' },
-    bossAccount = { resource = 'lo_bossmenu', getAccountFn = 'GetAccount', removeMoneyFn = 'RemoveMoney' },
-    gangAccount = { resource = 'lo_gangmenu', getAccountFn = 'GetAccount', removeMoneyFn = 'RemoveMoney' },
-    governmentTypes = { 'leo', 'medic', 'gouv' },
-}
-```
+Most jobs want at least a `duty` point so members can clock in.
 
-If you do not have a banking resource yet, set `enabled = false` for now.
+## 5. (Optional) Create custom items
 
-## 5. Pick a personal-menu key
+**Items** tab → **New item**. Fill in name, label, weight, limit. Tick "Usable" if you want it to consume on use, configure its effect.
 
-```lua
-Config.ActionMenuKey = 'F7'
-```
+Restart `vorp_inventory` after creating items.
 
-## 6. Webhook for audit logs (optional)
+## 6. Back up
 
-```lua
-Config.Logs = {
-    enabled = true,
-    webhook = 'https://discord.com/api/webhooks/…',
-    servername = 'MyServer',
-}
-```
-
-Leave `webhook = ''` to only print logs in the server console.
-
-## 7. Start the resource and open `/jobcreator`
-
-You should see the dashboard. If not, see [Troubleshooting](/guide/troubleshooting).
+**Backups** tab → **Export**. Save the JSON somewhere. Do this regularly.

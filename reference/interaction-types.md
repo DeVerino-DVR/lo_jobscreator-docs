@@ -1,129 +1,28 @@
 # Interaction types
 
-Each entry in `Config.InteractionTypes` represents a built-in interaction
-type. The shape of `data` depends on the type. Custom (extension-provided)
-types declare their own shape via `interactionSchemas`.
+The built-in types you can pick when creating an interaction in the panel.
 
-::: warning Legacy `data.items[]`
-The original script stores per-item config inside `data.items[i]` rather
-than at the root of `data`. Newer fields (animation, daily limit) live on
-each item, not on the root. The runtime helpers
-`ResolveAnim(d)` and `ResolveLimits(d)` in `shared/main.lua` flatten this
-for you — **always** use them at runtime, never read `data.dict` etc. directly.
-:::
+| Type | Public? | Behaviour |
+|---|---|---|
+| `stash` | yes | Opens a stash. Personal or shared. Backed by `vorp_inventory` (or `ox_inventory` if installed). |
+| `shop` | no | Buys items. Configurable per-item price ($/gold), optional job / grade restriction, optional stock. |
+| `farm` | yes | Plays an animation for X seconds → receive a random amount of an item. Multiple possible yields with a selection menu. Optional alert chance to a job type. |
+| `sell` | yes | Sells items for $/gold. Per-item price, optional max per cycle, optional daily / total cap. |
+| `process` | yes | Converts input items into output items, with a progress bar. |
+| `craft` | yes | Pick a recipe → consumes ingredients → spawns the result. |
+| `duty` | no | Toggles on / off duty for the player's current job. |
+| `bossaction` | no | Boss-only menu — opens an external boss management resource (`lo_bossmenu` / `lo_gangmenu` if installed). Only visible to grades flagged `isboss = true`. |
+| `vehicle_garage` | yes | Spawn / store one of the configured vehicles. References entries from the [Vehicles catalogue](/admin/catalogs#vehicles-catalogue). |
+| `stable` | yes | Same idea for horses, against the [Horses catalogue](/admin/catalogs#horses-catalogue). |
+| `delivery_point` | yes | Starts a delivery mission. Drive to one or more destinations, get paid on completion. Optional cargo, optional vehicle. |
+| `phone` | yes | A phone with a contacts list. Call another number — the recipient's phone rings and they can pick up or reject. |
+| `teleport` | yes | Teleports the player to a destination. Optional fade and loading. |
+| `clothing_store` | yes | Fires your clothing resource's "open store" event. Configure in `Config.Framework.clothing` or implement `CustomOpenClothingStore(src)` in `modules/editable/server.lua`. |
+| `clothing_wardrobe` | yes | Same, for the personal wardrobe. Override with `CustomOpenWardrobe(src)`. |
+| `witness` | yes | Fires a dispatch alert (see [Dispatch](/guide/dispatch)). |
 
-## `stash`
+"Public?" means whether the type can be used in a public-interaction (anyone can use it) or only attached to a job / gang.
 
-| Field | Notes |
-|---|---|
-| `data.maxWeight` | Stash capacity. |
-| `data.minGrade` | Minimum grade to access. |
-| `data.shared` | Shared by all employees of the job. |
+## Want a type that's not in this list?
 
-## `shop`
-
-`data.items[i] = { item, label, price, currency, stock?, minGrade? }`.
-`currency = 0` (dollars) or `1` (gold).
-
-## `farm`
-
-Per-item harvesting:
-
-```lua
-data.items[i] = {
-    item, label,
-    receiveAmount = { min = 1, max = 3 },     -- legacy: top-level data.amount
-    chance        = 100,
-    dailyLimit, totalLimit,
-    animation = { dict, anim, duration = 5000, flag = 1 },
-    requireItem,                               -- consumed per use
-    rewardItems = { { item, chance, min, max } }, -- multi-loot
-}
-```
-
-## `process`
-
-Same shape as `farm` plus `data.items[i].input = { { item, count } }` for
-required inputs.
-
-## `sell`
-
-```lua
-data.items[i] = { item, price, currency, dailyLimit, totalLimit }
-```
-
-`currency = 0` for dollars, `1` for gold.
-
-## `craft`
-
-Recipe-based:
-
-```lua
-data.recipes[i] = {
-    output = { item, count },
-    inputs = { { item, count }, ... },
-    duration, animation,
-    minGrade, dailyLimit,
-}
-```
-
-## `phone`
-
-```lua
-data = { number, label }
-```
-
-Triggers a phone-call menu. Implementation in `modules/phone/`.
-
-## `duty`
-
-```lua
-data = { mode = 'toggle' | 'on' | 'off', minGrade }
-```
-
-Sets the player on/off duty for the parent job.
-
-## `clothing_store` / `clothing_wardrobe`
-
-Empty `data` — the runtime calls `Config.Framework.clothing.openStore` or
-`openWardrobe`.
-
-## `vehicle_garage`
-
-```lua
-data = { vehicles = { { model, label, price, minGrade } } }
-```
-
-Models from `data/vehlist.lua`.
-
-## `delivery_point`
-
-```lua
-data = { destinations = { { coords, reward } }, vehicleModel }
-```
-
-Multi-step delivery defined per source point.
-
-## `bossaction`
-
-Empty `data` — opens the boss menu (job/gang management UI).
-
-## `teleport`
-
-```lua
-data = { destination = vector4, fade = true, minGrade }
-```
-
-## `stable`
-
-```lua
-data = { horses = { { model, label, price, minGrade } } }
-```
-
-Models from `data/horses.lua`.
-
-## Inspecting real data
-
-In the panel, click any interaction → **Inspection de l'interaction** tab
-→ Copy. The JSON shows exactly what the server has stored, including the
-`data.disable.move` legacy nesting.
+You register it yourself from another resource. See [Custom interaction types](/reference/custom-types).

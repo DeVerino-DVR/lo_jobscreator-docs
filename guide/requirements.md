@@ -1,35 +1,28 @@
 # Requirements
 
-## Mandatory
+## Required
 
-- A **RedM** server (`lua54` enforced).
-- **MySQL** via [`oxmysql`](https://github.com/overextended/oxmysql).
-- One of the supported framework cores (see [Frameworks](/guide/frameworks)):
-  VORP, RSG, QBR, QR, RPX, REDEM, TPZ, FRP, or `standalone`.
+- A recent **RedM** artifact build.
+- **`oxmysql`** — the script uses it to create and read its own tables.
+- **`vorp_core`** and **`vorp_inventory`** — official framework support.
 
-## Recommended
+Without VORP the script still starts in a minimal standalone mode (state-bag jobs, no inventory). It is mostly there to keep the panel running on a dev box; production servers should run VORP.
 
-- [`ox_lib`](https://github.com/overextended/ox_lib) — best UI provider,
-  fastest menus, cleanest progress bars.
-- [`ox_target`](https://github.com/overextended/ox_target) — preferred
-  interaction mode (`Config.DefaultInteractionMode = 'target'`). Falls back
-  to VORP prompts if absent.
+## Optional (auto-detected)
 
-## Optional
+If installed, the script picks them up automatically — nothing to configure:
 
-- [`vorp_inventory`](https://github.com/VORPCORE/vorp-inventory-redm) — used
-  by default if your core is VORP.
-- `jo_libs` — alternative menu/input provider.
-- A clothing resource (`jo_clothingstore`, `vorp_clothing`, …) if you use the
-  `clothing_store` / `clothing_wardrobe` interactions.
+| Resource | What it gives you |
+|---|---|
+| `ox_lib` | Better menus, inputs, progress bars, notifications |
+| `jo_libs` | Same, plus the 3D gizmo placement mode for peds / props / blips |
+| `vorp_menu` | VORP's native menu / input UI |
+| `ox_target` | Replace floating prompts with on-screen targeting |
+
+If none of them are present, the script falls back to built-in equivalents (RedM-native prompts, simple notifications).
 
 ## Permissions
 
-The admin command (`/jobcreator` by default) is restricted to the groups
-listed in `Config.PermissionGroup`. Set this to your staff group(s) before
-booting the resource.
+You need an admin group set in `Config.PermissionGroup` (default `admin`). On VORP, that's the value of the character's `group` column.
 
-```lua
--- config.lua
-Config.PermissionGroup = { 'admin' }    -- or { 'admin', 'moderator' }
-```
+You can also gate each panel tab separately via `Config.ButtonPermissions` — see [Permissions](/guide/permissions).

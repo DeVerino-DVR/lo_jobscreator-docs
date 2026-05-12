@@ -1,34 +1,39 @@
-# Backups
+# Backups & restore
 
-Manual snapshots and automatic safety nets.
+The panel can export the whole configuration to a single JSON file, and import it back.
 
-## Manual snapshots
+## What's included
 
-**Sauvegardes** tab → **+ Nouvelle sauvegarde** captures the current state
-of all admin data (jobs, gangs, public, items, blips, peds, settings) into
-a single row of `lo_backups`.
+The export contains:
 
-You can restore any snapshot from the same tab. Restore is **destructive**
-on the affected scope — confirmed by a modal that lists exactly what will
-be replaced.
+- Every job and gang (with grades, salaries, regions, blip, allowed actions).
+- Every interaction attached to those jobs / gangs.
+- Every public interaction.
+- Every custom blip, ped, prop, marker.
+- Every vehicle and horse in the catalogues.
+- Every item created from the panel (with its usable config).
+- `lo_settings` (the panel-edited part of `config.lua`).
 
-## Auto-backup before destructive operations
+**Not** included:
 
-Any "Restore from backup" or "Restore from template" automatically creates
-a snapshot of the current state first. So you can always undo an undo.
+- The audit log.
+- `vorp_inventory` data outside the items created here.
+- Anything from other resources.
 
-## Where the data lives
+## Exporting
 
-```sql
-CREATE TABLE `lo_backups` (
-  `id`         INT AUTO_INCREMENT PRIMARY KEY,
-  `name`       VARCHAR(190),
-  `created_at` DATETIME,
-  `created_by` VARCHAR(64),
-  `note`       TEXT,
-  `payload`    LONGTEXT      -- JSON dump
-);
-```
+**Backups** tab → **Export**. The panel saves a `.json` file via the browser download dialog.
 
-You can rotate this table externally (e.g. delete rows older than 30 days)
-without breaking anything — the panel re-reads on every open.
+## Importing
+
+**Backups** tab → **Import** → pick the file. The panel runs a diff first (what would be created / replaced / deleted) and shows you the summary before applying.
+
+Imports always create an automatic safety snapshot first — if something goes wrong you can revert.
+
+## Schedule
+
+Make this a habit. Once a week is the absolute minimum on a production server. Daily before risky changes.
+
+## Restore from raw SQL
+
+If everything in the panel is broken, you can also restore from a `mysqldump` of the `lo_*` tables. The panel re-reads the DB on resource start.

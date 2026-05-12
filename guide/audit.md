@@ -1,37 +1,42 @@
 # Audit log
 
-Every administrative write is logged. The data lives in the `lo_audit`
-table and is shown in the **Journal admin** tab.
+Every administrative write is recorded in `lo_audit_log`. The **Audit** tab in the panel browses this table.
 
-## What gets logged
+## What's logged
 
-- Entity create / update / delete (job, gang, public, item, blip, ped, …).
-- Interaction create / update / delete.
-- Settings overrides.
-- Backup create / restore.
-- Template apply / delete.
+- Job / gang created, edited, deleted.
+- Grade added, edited, removed.
+- Interaction created, edited, deleted (any scope).
+- Custom blip / ped / prop / marker / vehicle / horse created, edited, deleted.
+- Item created, edited, deleted.
+- Server config changed (per key).
+- Import / restore / backup operations.
 
-A row contains:
+## What's recorded for each entry
 
 | Column | Meaning |
 |---|---|
-| `created_at` | Timestamp. |
-| `actor_source` | RedM `source` of the admin. |
-| `actor_name` | Character name at the time of the write. |
-| `actor_group` | Group at the time of the write. |
-| `action` | Verb (`entity.update`, `interaction.delete`, …). |
-| `target` | Target id / name. |
-| `before` | JSON snapshot of the affected row before the write. |
-| `after` | JSON snapshot after the write. |
+| `ts` | UNIX timestamp (ms) |
+| `staff_id` | The character's user id |
+| `staff_name` | The character's name at time of the action |
+| `action` | `create`, `update`, `delete`, `import`, … |
+| `target_type` | `job`, `gang`, `interaction`, `item`, `blip`, … |
+| `target_name` | The target's technical name |
+| `details` | JSON blob with the before/after diff (or the payload) |
 
-## Discord webhook
+## Reading it
 
-Set `Config.Logs.webhook` to a Discord webhook URL to mirror every log in a
-Discord channel. The script chunks long messages and respects Discord's
-rate-limit.
+In the **Audit** tab you can filter by staff, action, target type and date range. Click an entry to see the JSON `details`.
 
 ## Retention
 
-The script does not auto-prune `lo_audit`. Set up an external scheduled
-job (or your favourite SQL cleanup script) to delete rows older than your
-retention policy.
+There's no automatic pruning — the log keeps growing. For most servers it stays small enough to ignore, but if you want to trim it:
+
+```sql
+DELETE FROM lo_audit_log WHERE ts < (UNIX_TIMESTAMP() - 30 * 86400) * 1000;
+-- keeps the last 30 days
+```
+
+## Discord webhook
+
+`Config.Logs.enabled = true` + `Config.Logs.webhook = '<url>'` mirrors the audit log to Discord embeds.

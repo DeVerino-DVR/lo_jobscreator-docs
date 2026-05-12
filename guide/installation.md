@@ -1,68 +1,42 @@
 # Installation
 
-## 1. Drop the resource
+1. **Drop the folder** `lo_jobscreator` into your `resources/` folder.
 
-Place the `lo_jobscreator` folder anywhere in your `resources/` tree. The
-folder name **must** stay `lo_jobscreator` — it is referenced in the NUI
-URL and in the public exports.
+2. **Add it to `server.cfg`**, after `oxmysql` and `vorp_core`:
 
-A common layout:
+   ```text
+   ensure oxmysql
+   ensure vorp_core
+   ensure vorp_inventory
+   ensure lo_jobscreator
+   ```
 
-```
-resources/
-└── [jobs]/
-    └── [creator]/
-        └── lo_jobscreator/
-```
+3. **Start the server once.** All SQL tables are created automatically (see [SQL schema](/reference/sql) for the full list).
 
-## 2. Ensure it in `server.cfg`
+4. **Set your admin group.** Open `config.lua` and edit:
 
-```cfg
-ensure oxmysql
-ensure vorp_core         # or rsg-core / qbr-core / rpx-core / …
-ensure lo_jobscreator
-```
+   ```lua
+   Config.PermissionGroup = 'admin'   -- or { 'admin', 'superadmin' }
+   ```
 
-Order matters — `lo_jobscreator` must start **after** your framework core.
+5. **Open the panel.** In-game, type `/jobcreator`.
 
-## 3. First boot creates the SQL schema
+That's it. No external dependencies to set up, no DB seed to run.
 
-On first start with a connected database, the resource auto-creates:
+## After creating items
 
-```
-lo_jobs                    -- job entities
-lo_gangs                   -- gang entities (only if Config.Features.gangs = true)
-lo_job_interactions        -- interactions attached to jobs
-lo_gang_interactions       -- interactions attached to gangs
-lo_public_interactions     -- standalone public interactions
-lo_settings                -- live admin-panel settings overrides
-lo_audit                   -- write log
-lo_backups                 -- snapshot table
+The script writes new items into `vorp_inventory`'s `items` table. After you create or edit items in the panel, **restart `vorp_inventory`** so it reloads its cache. The panel reminds you in a banner each time.
+
+## Item images path (RedM-specific gotcha)
+
+When you upload an item image from the panel, the file is written to `vorp_inventory/html/img/items/`. On some Windows setups, writing across resource folders that contain `[brackets]` (e.g. `[inventory]/vorp_inventory`) fails silently. If the panel says "no such file":
+
+```lua
+-- in config.lua
+Config.ItemImagePath = 'C:/your/path/resources/[inventory]/vorp_inventory/html/img/items/'
+-- must end with a trailing slash
 ```
 
-If you do not want gang support at all, leave
-`Config.Features.gangs = false` (default). Gang tables will simply not be
-created — no DML is run for them.
+## Updating
 
-## 4. Open the panel
-
-In game, run `/jobcreator`. You should land on the dashboard. If the command
-does nothing:
-
-- Check that your character is in a group listed in
-  `Config.PermissionGroup`.
-- Check the F8 console for a red `[lo_jobscreator]` message.
-- See [Troubleshooting](/guide/troubleshooting).
-
-## 5. Editing the NUI (optional)
-
-Only needed if you want to rebuild the front-end from source. The pre-built
-NUI bundle ships in `web/build/`.
-
-```bash
-cd web
-pnpm install
-pnpm build
-```
-
-Restart the resource (`restart lo_jobscreator`) to pick up the new bundle.
+Replace the folder and restart the resource. SQL migrations run automatically on boot. Your data lives in SQL — overwriting the resource folder doesn't delete anything.

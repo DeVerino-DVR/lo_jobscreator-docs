@@ -1,53 +1,55 @@
-# Jobs vs Gangs vs Public interactions
-
-Three top-level entity kinds live in the panel. Pick the right one for your
-use case.
+# Jobs, gangs and public
 
 ## Jobs
 
-A **job** represents a structured organisation: police, medic, mayor, taxi
-company, hunter co-op, …
+Created and edited in the **Jobs** tab.
 
-- Owns a list of **grades** (rank + salary + boss flag).
-- Owns a list of **interactions** (stash, shop, duty, …) accessible only by
-  members.
-- Has an entity `type` (`leo`, `medic`, `gouv`, `job`, `craft`, `farm`, `hunt`,
-  `fish`, `trade`, …) that controls which **personal actions** appear by
-  default in the F-key menu of members.
-- Members are tracked through your framework (`character.job`).
+A job is stored as a row in `lo_jobs` and applied to characters via VORP (`character.job` + `character.jobGrade`). If you run a separate job-management resource that exposes upsert/delete exports, declare them in `Config.Framework.entityExports.vorp` and the panel will push every change there too.
 
-Stored in `lo_jobs`.
+### Grades
+
+A grade has:
+
+- `id` — numeric, 0 is the lowest.
+- `name` — display name.
+- `payment` — salary per paycheck cycle.
+- `isboss` — boss-only interactions (`bossaction`) only show for grades where this is true.
+
+There is no hard limit on the number of grades.
+
+### Job type
+
+The type drives:
+
+- **Online counters** — `GetCountByType('leo')` returns how many cops are online.
+- **Dispatch routing** — alerts target jobs by type (`leo`, `medic`, `fire`).
+- **Paychecks** — `Config.Paycheck.governmentTypes` lists the types paid by the state automatically; others can use a boss-account integration.
+
+You can edit the list of available types in **Server config → Entity types**.
+
+### Regions
+
+Each job has a list of regions (towns + districts) it covers. Alerts and the witness system only notify jobs whose regions intersect the alert's location. Set this in the job edit form.
 
 ## Gangs
 
-A **gang** is the same shape as a job but lives in `lo_gangs` and uses
-`character.gang` / `character.ganggrade` instead. Only enabled when
-`Config.Features.gangs = true`.
+Same shape as jobs, stored in `lo_gangs`, applied to characters via VORP (`character.gang` + `character.gangGrade`). Created in the **Gangs** tab.
 
-If your framework does not have a gang concept, see the optional core patch
-described in `GANG_SETUP.md` shipped with the script.
+A player can be in a job and a gang simultaneously — the two systems are independent.
 
 ## Public interactions
 
-A **public interaction** is a single point on the map that **does not belong
-to any job or gang**. Examples:
+Created in the **Public actions** tab. No job, no gang — anyone in the world can use them. Typical use cases:
 
-- A public stash anybody can use.
-- A general-store shop in a town centre.
-- A public clothing store / wardrobe.
-- A teleport between two map points.
-- A public crafting bench.
+- Public stables (anyone can fetch / store their personal horse).
+- Public garages.
+- Mailboxes, payphones, water pumps.
+- Teleporters between map points.
 
-Stored in `lo_public_interactions`. They appear under the **Public** tab of
-the admin panel and are gated by `Config.InteractionTypes[type].isPublic`
-(only types with that flag can become public).
+Internally they live in `lo_public_interactions`.
 
-## Quick decision matrix
+## Which one should I use?
 
-| You want… | Pick |
-|---|---|
-| A bank vault used only by the bank job | Job interaction |
-| A barber shop usable by everyone | Public interaction (`clothing_store`) |
-| A weapon stash for the Lemoyne Raiders | Gang interaction |
-| A hunter sells point usable by every Hunter job | Job interaction (per Hunter job) |
-| A delivery point that any player can complete | Public interaction (`delivery_point`) |
+- Something only one profession does → **Job interaction**.
+- Something tied to a criminal group with grades and a boss → **Gang interaction**.
+- Something anyone in the world does → **Public interaction**.

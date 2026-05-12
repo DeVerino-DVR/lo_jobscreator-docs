@@ -1,25 +1,25 @@
-# Public interactions
+# Public actions
 
-Map points that are **not tied to any job or gang** — public stashes,
-public clothing stores, teleports, public crafting benches, …
+World points anyone can use, with no job restriction. Live in `lo_public_interactions`.
 
-## Editor
+## Typical use cases
 
-Same UI as a job interaction, minus the grade gate. Only interaction types
-flagged `isPublic = true` in `Config.InteractionTypes` can be created here.
+- Public stables (any character can fetch / store their personal horse).
+- Public garages.
+- Mailboxes, water pumps, payphones.
+- Teleport points between map areas.
+- Free clothing wardrobes.
 
-The editor saves into `lo_public_interactions` and the runtime serves them
-to every player.
+## Creating one
 
-## Common use cases
+**Public actions** tab → **New action** → pick the type → place it → fill the type-specific form.
 
-- Public stash for everyone (limited weight to avoid abuse).
-- Public clothing store and wardrobe for newly-arrived players.
-- Teleport between two map sides.
-- Public crafting bench for basic items.
+Most interaction types are allowed here. The few that aren't (job-specific things like `duty` or `bossaction`) are hidden from the dropdown automatically.
 
-## Permissions
+## Optional job filter
 
-Editing public interactions is gated by
-`Config.ButtonPermissions.publicActions` (inherits
-`Config.PermissionGroup` if empty).
+A public interaction can still optionally restrict who can *use* it (e.g. a hospital teleport only doctors should use). Set the filter from the interaction's form. The point stays visible to everyone (so it can be a map landmark) but rejects players who don't qualify.
+
+## Limits
+
+Public interactions support the same daily / total use limits per player as job interactions.

@@ -1,39 +1,47 @@
-# Items module
+# Items
 
-Manage rows of the `items` inventory table.
+Create and manage items directly in `vorp_inventory`'s database.
 
-## Listing
+## Item form
 
-Searchable table of every item registered in inventory (VORP / ox), with
-columns:
-
-| Column | Source |
+| Field | What it is |
 |---|---|
-| Name | `items.item` |
-| Label | `items.label` |
-| Limit | `items.limit` (per-player stack cap, -1 = unlimited) |
-| Usable | `items.usable` |
-| Type | `items.type` (item_standard, weapon, clothing, …) |
+| **Name** | Internal identifier (lowercase, no spaces). What other resources use. Immutable. |
+| **Label** | What players see. |
+| **Weight** | Per-unit weight. |
+| **Limit** | Max stack size per inventory. |
+| **Type** | `item_standard`, `item_weapon`, etc. |
+| **Can remove** | Players can drop it. |
+| **Usable** | Players can use it from the inventory. |
+| **Consumable** | If on, one is removed per use. If off, the item triggers an action without disappearing (lockpicks, notepads). |
+| **Image** | Drag-and-drop a PNG. Saved to `vorp_inventory/html/img/items/`. |
 
-## Creating an item
+After saving new items, **restart `vorp_inventory`** so it reloads its cache. The panel shows a banner each time this is needed.
 
-**+ Nouvel item** opens a modal asking for the name (snake_case),
-label, limit, weight, type and an optional image URL override.
+## Usable effects
 
-Once saved, the row is inserted into `items` immediately and a refresh
-event is broadcast so other resources reading `items` pick it up.
+If the item is usable, you can stack one or more effects. Each one has its own sub-form:
 
-## Image URL pattern
+| Effect | Notes |
+|---|---|
+| Hunger / Thirst / Stress | Delta value (positive or negative). Routed through your HUD via `OnUsableHunger` / `OnUsableThirst` / `OnUsableStress`. |
+| Player core (health / stamina) | Delta. Routed via `OnUsablePlayerCore`. |
+| Horse core | Same idea, for the player's current mount, via `OnUsableHorseCore`. |
+| Animation | Dictionary + name + duration. Plays while the item is being used. |
+| Drunk gait | Duration + strength. The player wobbles. |
+| Camera shake | Intensity + duration. |
+| Screen FX | A built-in postFX preset or a named preset from `Config.UsablePresets`. |
 
-```lua
-Config.ImageUrl = 'nui://vorp_inventory/html/img/items/%s.png'
-```
+All effects fire together when the item is consumed.
 
-`%s` is replaced by the item name. Override per-item with the
-`image_url` field.
+## Non-consumable items
 
-## Currencies
+Items marked **Usable but not Consumable** trigger the `OnUsableItemTrigger` hook on the client with the item name, the stack id, and the item data. Wire this in `modules/editable/client.lua` to react (open a UI, start a mini-game, send a radio message, etc.).
 
-`dollars` and `or` appear in the table for convenience but they are not
-inventory items — they are VORP currencies. The script handles them
-internally via `character.addCurrency(0, …)` / `character.addCurrency(1, …)`.
+## Catalog images
+
+The panel comes with a built-in image library (common item icons). If you don't have your own PNG, pick one from the catalog.
+
+## Deletion
+
+Removing an item deletes its row in `vorp_inventory.items` AND its usable config in `lo_item_usables`. Existing copies in player inventories become unusable on the next inventory open; restart `vorp_inventory` to clean them out.

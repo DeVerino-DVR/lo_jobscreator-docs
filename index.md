@@ -4,7 +4,7 @@ layout: home
 hero:
   name: lo_jobscreator
   text: Build jobs without leaving the game.
-  tagline: Job, gang and interaction creator for RedM. Multi-framework, in-game admin panel, public extension API.
+  tagline: In-game job, gang and interaction creator for RedM. Official support for VORP.
   image:
     src: /logo.svg
     alt: lo_jobscreator
@@ -14,28 +14,22 @@ hero:
       link: /guide/introduction
     - theme: alt
       text: Admin panel
-      link: /admin/dashboard
+      link: /admin/overview
     - theme: alt
-      text: Build an extension
-      link: /extensions/overview
+      text: Exports & hooks
+      link: /reference/exports
 
 features:
   - icon: 🛠️
-    title: Pure in-game editor
-    details: Create, configure and tune jobs, gangs, items, interactions, blips and peds entirely from a Vue admin panel. No file editing, no restart loop.
+    title: Everything from one panel
+    details: Jobs, gangs, grades, salaries, items, blips, peds, props, markers, garages, stables, deliveries, shops, stashes, phones — created and edited in-game. No file editing, no restart loop.
   - icon: 🔌
-    title: Multi-framework
-    details: Works with VORP, RSG, QBR, RPX, REDEM, TPZ, FRP and a standalone fallback. Detection is automatic; one config switch overrides it.
+    title: VORP-ready
+    details: Officially supported on vorp_core + vorp_inventory. Auto-detects ox_lib, jo_libs, vorp_menu and ox_target. Falls back to a built-in standalone mode if nothing is installed.
   - icon: 🧩
-    title: Public extension API
-    details: Third-party developers can register items, actions, interaction types and UI sections at runtime. Sell your own extension without ever forking the core.
-  - icon: ⚡
-    title: Built for big servers
-    details: Tested on 600+ player setups. Marker / ped / prop streaming, debounced refreshes and on-demand SQL.
-  - icon: 🌐
-    title: Translatable
-    details: Locale files in /locales (en, fr shipped). Add your own language; extensions can ship their own dictionaries too.
+    title: Open where it matters
+    details: A single editable folder (modules/editable/) lets you plug your own scripts in with named hooks. The rest of the engine is closed and maintained.
   - icon: 🛡️
     title: Permission-aware
-    details: Per-section button gating, optional staff groups, audit log of every admin write, automatic backups before destructive operations.
+    details: Per-tab permission groups, every admin change recorded in an audit log, automatic JSON backups before destructive operations.
 ---

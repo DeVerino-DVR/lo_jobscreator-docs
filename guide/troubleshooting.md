@@ -1,60 +1,74 @@
 # Troubleshooting
 
-## `/jobcreator` does nothing
+## The panel won't open
 
-- Confirm your character is in a group listed in `Config.PermissionGroup`.
-- Check the F8 console for `^1[lo_jobscreator]` red lines.
-- Make sure the resource is `started` (`status lo_jobscreator` in the
-  server console).
+- Your group is not in `Config.PermissionGroup`. Check the character's `group` column.
+- The chat command was renamed in `Config.Command`. Try the new name.
+- A JS error broke the NUI — open the F8 / browser console.
 
-## "ServerDataReady is false"
+## An interaction has no prompt and no target
 
-The server is still loading data from MySQL. Wait a few seconds. If it
-never becomes true, check that `oxmysql` is started **before**
-`lo_jobscreator` and that the connection string is valid.
+- Your **Preferences → Interaction mode** is set to `target` but `ox_target` is not running.
+- The interaction's position is wrong / inside the floor. Edit and re-place it.
+- The interaction has a job restriction your character doesn't match.
 
-## NUI is blank / cursor stuck
+## I created items but they don't show in the inventory
 
-- Open `nui_devtools lo_jobscreator` from the F8 console to inspect the
-  Vue app and the network calls.
-- Check that `web/build/index.html` exists. If you rebuilt the NUI, make
-  sure the build succeeded (`pnpm build`).
+- Restart `vorp_inventory`. It caches its `items` table at boot.
+- Check that the **Restart vorp_inventory** banner in the Items tab cleared.
 
-## Markers / peds do not appear
+## Item image upload says "no such file"
 
-- `Config.Features.<section> = true`?
-- The client thread waits on `LocalPlayer.state.IsInSession`. If that flag
-  never flips true, your framework is not setting it — adapt the wait in
-  `client/main.lua` or rely on a different ready signal.
-- Streaming caps in `Config.Performance` may be hiding distant entries.
+On RedM, writing across resource folders that include `[brackets]` can fail. Set the absolute path:
 
-## Saves do not persist
+```lua
+Config.ItemImagePath = 'C:/your/path/resources/[inventory]/vorp_inventory/html/img/items/'
+```
 
-- Confirm `oxmysql` is connected and the `lo_*` tables exist.
-- Check `lo_audit` — every save writes a row there. If the row is missing,
-  the save never reached the server.
-- Look for a `HasPermission(nil)` log line — that means somebody cached
-  `local source = source` at the top of a Lua file. See
-  [Best practices](/extensions/best-practices).
+The path must end with a trailing slash.
 
-## Extension tab does not show
+## Paychecks don't drop
 
-- The extension's `typeKey` must match the entity's `type` field exactly.
-- The extension must have been started **after** `lo_jobscreator`. Stop and
-  start it again, or rely on the recommended `while ~= 'started' do Wait` loop.
-- Open `nui_devtools` and check the Pinia store: `data.extensions` should
-  contain your extension id.
+- The player isn't on duty. Use a `duty` interaction.
+- The job's grade has `payment = 0`.
+- The job is not a `governmentTypes` job and the boss account is empty.
+- `Config.Paycheck.enabled = false`.
 
-## Currency items missing
+## A vehicle / horse won't spawn ("model load failed")
 
-`dollars` and `or` are **not** inventory items — they are VORP currencies
-managed by `vorp_core`. The script exposes them as items in the editor for
-convenience and converts to `character.addCurrency(0, …)` /
-`character.addCurrency(1, …)` internally.
+The model name is wrong for your client build. Check `data/vehlist.lua` for valid ones.
 
-## More help
+## A custom ped vanishes after a few seconds
 
-- Inspect any entity from the **Inspection** tab to see the full JSON.
-- Inspect any interaction from its editor → **Inspection de l'interaction**.
-- Open a ticket with the inspect output attached, and the F8/server log
-  excerpt.
+Some RDR2 models don't survive RedM's local ped pool. The panel marks known-broken ones as "broken"; pick another model.
+
+## I see two copies of my custom ped
+
+You spawned another instance of the same model at the same coords from another resource with `IsNetworked = true`. This script already handles peds locally on every client — don't double-spawn.
+
+## Dispatch alerts don't reach the right job
+
+- The job's **regions** don't cover the alert's coordinates.
+- The receivers aren't on duty.
+- The alert's `jobsToAlert` list doesn't include them.
+
+## A hook (`OnXxx`) doesn't fire
+
+- The function name is misspelled. They are **case-sensitive**.
+- It's defined in the wrong file (client hook in `server.lua` or the other way around).
+- It's defined inside a `RegisterNetEvent` block instead of at top level.
+
+Hooks are read from the global scope of `modules/editable/client.lua` and `modules/editable/server.lua`. They must be plain `function OnXxx(...)`.
+
+## Logs
+
+Set `Config.LogLevel = 'debug'` to get verbose console output, then reproduce the bug. Server console shows server-side logs; F8 shows client-side. Most failures print a short reason.
+
+## When all else fails
+
+Open an issue on the GitHub repo with:
+
+- Your RedM artifact build.
+- The server console output around the failure.
+- F8 output if it's a client issue.
+- Whether you reproduce it with no other resource running.

@@ -1,49 +1,31 @@
 # Introduction
 
-`lo_jobscreator` is a complete job, gang and interaction system for **RedM**
-servers. Instead of editing a `Config.lua` and restarting the server every
-time you want to add a stash, a delivery point or a new job, you do it all
-**from inside the game** through a Vue 3 admin panel — and your changes go
-live without a restart.
+`lo_jobscreator` is an in-game admin panel for RedM that lets you create and manage everything around jobs and gangs without ever editing files:
 
-## What you can do with it
+- Jobs, gangs and public points
+- Grades and salaries
+- Interactions: stashes, shops, farms, sells, processes, crafts, deliveries, garages, stables, phones, teleports, clothing, dispatch alerts
+- Items (created directly into `vorp_inventory`), usable effects (drunk, stress, hunger, screen FX…)
+- Custom blips, peds, props, 3D markers
+- Templates to bootstrap a job in one click
+- Backups, restore, audit log
 
-- **Create jobs and gangs** with their grades, salaries, blip and per-grade
-  permissions.
-- **Drop interactions on the map**: stash, shop, delivery, teleport, vehicle
-  garage, stable, clothing store, crafting, processing, farming, selling,
-  duty, telephone, wardrobe, boss action…
-- **Manage public points** independent from any job (a public stash, a
-  public clothing store, etc.).
-- **Configure inventory items** (VORP / ox_inventory) — register them in MySQL,
-  enable usable items, manage stack limits and weight.
-- **Drop custom blips and NPC peds** anywhere on the map (server-wide visible
-  to every player).
-- **Hand out personal actions** to roleplayers (handcuff, revive, search,
-  bandage, …) gated by job, grade and on-duty state.
-- **Audit, backup, template and restore** every change.
+It is built for, and officially supported on, **VORP** (`vorp_core` + `vorp_inventory`). Without VORP, the script runs in a minimal **standalone** mode (no inventory, statebag-based jobs).
 
-## Who it is for
+## What you actually edit
 
-- **Server owners** who pay for the script and want to run their RedM server
-  without writing Lua.
-- **Roleplay servers** that need fast iteration on jobs, gangs and economy.
-- **Resource developers** who want to extend the panel with their own
-  features and **sell** them as standalone resources — see the
-  [Extensions API](/extensions/overview).
+Two places — that's it:
 
-## What this documentation covers
+- [`config.lua`](/reference/config) — initial defaults (command name, language, permission groups, paycheck interval, etc.). Most of these are also editable live in the panel.
+- [`modules/editable/`](/reference/hooks) — five Lua files where you plug your own scripts via named hooks. Shipped unencrypted on purpose.
 
-| Section | For whom |
-|---|---|
-| [Guide](/guide/introduction) | Server owners installing, configuring and operating the script. |
-| [Admin Panel](/admin/dashboard) | Walkthrough of every tab in `/jobcreator`. |
-| [Extensions API](/extensions/overview) | Third-party developers building add-on resources. |
-| [Reference](/reference/config) | `Config.lua`, SQL schema, exports, events and hooks. |
+Everything else is the engine. Do not edit it.
 
-## Versioning
+## Who this doc is for
 
-The script follows semantic versioning. The **public extension API** is
-considered stable and will not break across minor versions — see
-[Public contract](/extensions/contract). The internal Lua and the NUI store
-shape are not part of that contract and may change at any time.
+Server owners and admins. You do not need to write code to use the resource — most of this documentation describes the panel and how features behave. The [Reference](/reference/exports) section is for developers who want to integrate with other scripts.
+
+## What's not covered
+
+- Plugging another framework than VORP. The bridge (`modules/editable/framework.lua`) is open and editable, but third-party frameworks are not officially supported.
+- Modifying the panel itself (the Vue NUI).

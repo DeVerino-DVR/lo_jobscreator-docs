@@ -1,40 +1,21 @@
 # Changelog
 
-## 2.0 — Extension API
+## 2.0
 
-### Added
+A full rewrite. Highlights:
 
-- **Public Extension API**: `RegisterExtension` / `UnregisterExtension`
-  / `ListExtensions` (server) and `RegisterClientExtension` /
-  `GetClientExtensions` (client). Extensions can contribute items,
-  personal actions, interaction types, UI sections and locale strings
-  without forking the core.
-- **Sample extension** shipped under `examples/lo_medicjob_example/`.
-- **`EXTENSIONS.md`** developer reference inside the script.
-- **Extension UI section tabs** in the entity editor with 9 field types
-  (text, number, boolean, select, multiselect, grade, item, textarea, json).
-- **Provider tracking** via `entity.data._extProviders[sectionId]` so
-  data survives extension restarts and is shown with an "Extension not
-  loaded" banner if the owning extension is stopped.
-- **Locale merging** at runtime — extensions ship FR/EN dictionaries that
-  fall back when the server owner has not provided overrides.
-
-### Changed
-
-- `extensionData` no longer leaks unrelated keys into the editor — only
-  keys that match a currently-registered `uiSection.id` or that are
-  recorded in `_extProviders` are exposed.
-- Tab bar in `EntityEditor.vue` now wraps with `overflow-x-auto` instead
-  of overflowing.
-
-### Fixed
-
-- Race condition between async fire-and-forget event + refresh on save.
-- `local source = source` cached `nil` in `UIUpsertInteraction` —
-  removed everywhere.
-- `<select>` glitches in CEF replaced with custom Combobox.
-- `navigator.clipboard` blocked in CEF — replaced with textarea +
-  `execCommand('copy')` fallback.
+- **VORP-only official support.** `vorp_core` + `vorp_inventory`. Third-party frameworks are wired via the open `modules/editable/framework.lua` bridge (unsupported).
+- **Admin panel rewrite** (Vue NUI). Jobs, gangs, public actions, item creator, custom blips / peds / props / markers, vehicles / horses catalogues, templates, backups, audit log, server config.
+- **Placement modes** — raycast (mouse) and 3D gizmo (drag / rotate, requires `jo_libs`).
+- **Interaction types**: `stash`, `farm`, `sell`, `process`, `craft`, `shop`, `vehicle_garage`, `stable`, `duty`, `bossaction`, `teleport`, `clothing_store`, `clothing_wardrobe`, `phone`, `delivery_point`, `witness`.
+- **Dispatch / witness** with optional `ox_lib` UI integration; replace the default banner with your own dispatch resource via the `OnDispatchAlertReceived` hook.
+- **Built-in Discord log module** (no `lo_logs` dependency).
+- **Built-in usable-items system** (eat / drink / shot / injection / horse stimulant, screen FX, drunk gait, cam shake).
+- **Leveled logger** — `Logger.trace/debug/info/warn/error`, `Config.LogLevel`, runtime command `/jc_loglevel <level>`.
+- **Localization** — drop `locales/<code>.json` with a `language` key, a button appears in the panel.
+- **Exports for other resources** — see [Reference → Exports](/reference/exports).
+- **Custom interaction types** — third-party resources can register their own types via `RegisterInteractionType` and they appear in the panel like a built-in.
+- **RedM-safe runtime** — native control hashes, no `os` on client, `lo_keysMapper` key system, broken-ped detection, long model timeouts for horses / wagons.
 
 ## 1.x
 

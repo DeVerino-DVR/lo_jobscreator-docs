@@ -1,43 +1,40 @@
-# Jobs module
+# Jobs
 
-Manage every job on the server.
+Create, edit, delete jobs.
 
-## Listing
+## Job form
 
-The left column lists every job, sortable and filterable. The badge next
-to the name is the **entity type** (`leo`, `medic`, `job`, `farm`, …) —
-this is what controls personal-action defaults and extension tabs.
-
-## Creating a job
-
-**+ Nouveau** opens the create dialog:
-
-| Field | Required | Notes |
-|---|---|---|
-| Name | ✓ | snake_case, unique. Will be the value stored in `character.job`. |
-| Label | ✓ | Display name. |
-| Type | ✓ | One of `Config.EntityTypes`. |
-
-The new job spawns with the default grades from `Config.DefaultGrades`.
-
-## Editor tabs
-
-| Tab | Purpose |
+| Field | What it does |
 |---|---|
-| **Infos** | Name, label, type. Delete button. |
-| **Grades** | Grade list (id, name, payment, isboss). |
-| **Blip** | Map blip — sprite, scale, coords (capturable). |
-| **Interactions** | List of interactions attached to this job. Add / edit / delete. |
-| **Actions** | Toggles for personal F-key actions. |
-| **Inspection** | Raw entity JSON, copyable. Useful for support tickets. |
-| _Extension tabs_ | One per extension uiSection whose `typeKey` matches. |
+| **Technical name** | What gets stored on the character. Lowercase, no spaces. Immutable after creation. |
+| **Label** | What players see (e.g. "Forces de l'ordre"). |
+| **Type** | A category (`leo`, `medic`, `fire`, `gouv`, …). Drives dispatch routing and online counters. |
+| **Description** | Optional, displayed in lists. |
+| **Blip** | Optional map blip for the job's main building. |
+| **Allowed personal actions** | Which entries from the personal-actions list this job's members get in their F-menu. |
+| **Regions** | Which towns / districts this job covers. Used by dispatch. |
 
-## "Set me as employee"
+## Grades
 
-Top-right green button. Sets your character's job to this job, grade 0.
-Useful while testing.
+A job has one or more grades. Each grade has:
 
-## Delete
+- `id` — numeric, 0 is the lowest.
+- `name` — display name.
+- `payment` — salary per paycheck cycle.
+- `isboss` — when true, `bossaction` interactions only show for this grade.
 
-Top-right red button. Asks for confirmation and lists every dependent row
-(interactions, audit entries) that will be cleaned up.
+Drag grades to reorder. Deleting a grade demotes all current members to the grade below.
+
+## Interactions
+
+The job's interactions list (stashes, shops, garages, duty points, etc.) lives inside the job edit screen. Add / edit / delete / re-place them from there.
+
+See [Interactions](/guide/interactions) for the field reference.
+
+## Deleting a job
+
+Removes the job from the database, demotes every current member to `unemployed`, and deletes every interaction attached to it. Asks for confirmation; logged in the audit log; restorable from a backup.
+
+## "Apply changes" vs live updates
+
+Most edits push to online clients within a couple seconds. A few — changing the job's technical name (which isn't possible anyway) or moving a ped attached to an interaction — require the player to leave the area and come back.

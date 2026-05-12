@@ -1,72 +1,42 @@
-# Net events
+# Server events
 
-Public, stable net events that extensions and other resources may
-listen to or trigger.
+The script does not expose a public net-event API. For lifecycle integration (player ready, duty changed, salary paid, job created…) **use [Editable hooks](/reference/hooks)** in `modules/editable/server.lua` instead. They run in the same process as the engine, catch errors, and are guaranteed to be called.
 
-## `lo_jobscreator:server:UseInteraction`
+For cross-resource integration, use **[Exports](/reference/exports)**.
 
-**Direction**: client → server (TriggerServerEvent)
+## What net events exist
 
-**Payload**: `(interactionId, interactionType, data)`
+A handful of internal events keep clients in sync with the server. They are **not** part of the public contract — names and payloads can change without notice. Listen to them only if a hook can't do what you need.
 
-Central dispatch event for **custom interaction types**. Every time a
-player completes an interaction whose type is not one of the built-ins,
-this event is fired. Listen on the server to implement your runtime:
+### `lo_jobscreator:server:DispatchAlert` *(server-side `TriggerEvent`)*
+
+Internally fired when a witness / alert flow triggers a dispatch. The exports `dispatchAlert` is the public entry point — prefer that.
+
+### `lo_jobscreator:server:DataReady` *(server-side `TriggerEvent`)*
+
+Fired once when the script has finished loading all jobs / gangs / interactions from SQL into memory at boot. Useful if your resource depends on `GetCreatedJobs()` returning a non-empty table.
 
 ```lua
-AddEventHandler('lo_jobscreator:server:UseInteraction', function(interactionId, interactionType, data)
-    local src = source
-    if interactionType ~= 'heal_point' then return end
-    -- apply heal logic using data.healAmount, etc.
+AddEventHandler('lo_jobscreator:server:DataReady', function()
+    -- exports.lo_jobscreator:GetCreatedJobs() is now populated
 end)
 ```
 
-Built-in interaction types (`stash`, `shop`, `farm`, …) are handled
-internally by the modules and do **not** fire this event.
+If your resource starts after `lo_jobscreator`, you may have missed the event. Either re-emit by reading the export directly, or guard with a retry.
 
-## `lo_jobscreator:server:ExtensionAction`
+### Client-side sync events
 
-**Direction**: client → server (auto-triggered by the core)
+The server pushes a stream of client events like `lo_jobscreator:client:DataChanged`, `:EntityPatched`, `:InteractionDelta`, `:UpdateDutyStatus`, `:Initialize`, plus per-asset events (`:NewCustomBlip`, `:UpdateCustomPed`, …). They exist to refresh the in-game state — **don't subscribe to them in another resource**. They are internal and will change.
 
-**Payload**: `(extId, hook, target)`
+## Custom interaction types
 
-Fired automatically when a player triggers an extension action that has no
-client-side `OnFeature_<hook>` handler but has a server-side
-`OnAction_<hook>` handler. The core resolves the chain in [Resolution
-order](/extensions/client#resolution-order).
+When you register a type via [`RegisterInteractionType`](/reference/custom-types), the events you declared in the spec (`clientEvent`, `serverEvent`) are how you receive triggers. There is no wrapper event on top.
 
-You usually do not trigger this event yourself — define
-`serverHandlers.OnAction_<hook>` in your extension config and the core
-will route it.
+## TL;DR
 
-## `lo_jobscreator:server:GetPlayerData`
-
-**Direction**: client → server (callback)
-
-Used internally by the client to hydrate its local state after
-`LocalPlayer.state.IsInSession` becomes true. Returns the player's
-character + the relevant subset of `CreatedJobs` / `CreatedGangs`.
-
-## `lo_jobscreator:server:EntityUpdated`
-
-**Direction**: server → server (regular event, no `Trigger…Event`)
-
-**Payload**: `(entityType, name, newData)`
-
-Fired on the server after every successful entity write
-(`updateEntity` NUI callback). Use it to react to admin edits in
-real-time:
-
-```lua
-AddEventHandler('lo_jobscreator:server:EntityUpdated', function(entityType, name, newData)
-    if entityType == 'job' and newData.your_section then
-        -- refresh your runtime state
-    end
-end)
-```
-
-## Other events
-
-The script triggers a number of internal events (`...:server:*`,
-`...:client:*`) that are **not** part of the public contract. They may
-change without notice. Listen at your own risk.
+| Goal | Use |
+|---|---|
+| React when a player joins / changes job / clocks in | A hook in `modules/editable/server.lua` |
+| Read who is on duty / what jobs exist | An [export](/reference/exports) |
+| Receive a trigger when a player uses a custom interaction | The event you declared in `RegisterInteractionType` |
+| Wait for boot data | `lo_jobscreator:server:DataReady` |

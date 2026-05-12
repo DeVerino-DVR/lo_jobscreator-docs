@@ -1,49 +1,41 @@
 # FAQ
 
-#### Does the script work without a framework?
+## Do I have to write Lua to use this?
 
-Yes — set `Config.Framework.force = 'standalone'`. You will lose
-framework-specific features (paycheck banking, character group
-permissions, on-duty toggling, …) and have to wire them yourself in
-`modules/editable/server.lua`.
+No. Everything is done from the in-game panel. You only touch Lua if you want to plug your own scripts in (see [Editable hooks](/reference/hooks)).
 
-#### Can I rename the resource folder?
+## Does it work with QBR / RSG / RPX / FRP / TPZ / REDEM?
 
-No. The folder name is part of the NUI URL (`https://lo_jobscreator/…`)
-and of the public exports.
+Not officially. The script is built for **VORP**. The bridge to the framework lives in `modules/editable/framework.lua` and is fully open — you can rewrite it for another core, but that's on you, and support won't cover it.
 
-#### Will my data survive an update?
+## Can I run it without VORP?
 
-Yes. Schema migrations are additive — new columns are added with safe
-defaults; no data is destroyed. Always take a snapshot from the
-**Sauvegardes** tab before a major version upgrade anyway.
+Yes — it falls back to a minimal **standalone** mode using state-bags for jobs and no inventory. It's intended for dev / testing; production should run VORP.
 
-#### How do I delete the gang system once enabled?
+## Will it conflict with my existing job system?
 
-Set `Config.Features.gangs = false`. The UI hides everything gang-related
-and the script stops querying `lo_gangs` / `lo_gang_interactions` — your
-data stays in MySQL but is never read again. Drop the tables manually if
-you really want to wipe.
+It writes to VORP characters directly (`character.job`, `character.jobGrade`, `character.gang`, `character.gangGrade`), which is the canonical place. If you have another resource that *also* writes to those fields, declare its upsert/delete exports in `Config.Framework.entityExports.vorp` and both stay in sync.
 
-#### Can two admins edit the same entity at the same time?
+## Can I create jobs at runtime from another script?
 
-Yes — saves are atomic per row, last-write-wins. The audit log records both
-writes so you can untangle a conflict after the fact.
+The panel is the supported way. There's no public "CreateJob(name, data)" export — adding one in your own server script is doable (call the same internal upsert), but it's not part of the API and may break on updates.
 
-#### Does it work on QBR / RSG / RPX / …?
+## How do I sell my own extension on top of it?
 
-Yes — see [Frameworks](/guide/frameworks). Auto-detection covers most
-setups. Force the key if your framework is not started yet at our boot
-time.
+Use the [`RegisterInteractionType`](/reference/custom-types) export to declare your own interaction type. Players configure it from the panel, your script handles it at runtime. That's the only supported extension surface.
 
-#### How do I add a brand-new interaction type?
+## Will updating the resource wipe my jobs?
 
-- For your own server only: add an entry in `Config.InteractionTypes` and
-  hook the runtime in `lo_jobscreator:server:UseInteraction`.
-- For a redistributable add-on: use the [Extensions API](/extensions/schema/interactions).
+No. The data lives in SQL (`lo_*` tables). Replacing the resource folder doesn't touch them.
 
-#### Where do extensions store their data?
+## Can I move from one server to another?
 
-In the existing entity row, under `entity.data[sectionId]`. Stopping the
-extension preserves the data (the panel just shows a banner). See
-[Extensions / Reading data at runtime](/extensions/runtime).
+Yes. Export from the source server (**Backups → Export**), import on the destination. SQL is self-contained per server.
+
+## Where do I report a bug?
+
+GitHub issues on the [docs / resource repo](https://github.com/DeVerino-DVR/lo_jobscreator-docs). Include your RedM artifact build, server / F8 console output, and steps to reproduce.
+
+## What's licensed how?
+
+The resource itself is commercial. The documentation (this site) is MIT. The contents of `modules/editable/` ship uncrypted because you're meant to edit them.

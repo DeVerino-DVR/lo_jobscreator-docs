@@ -1,64 +1,57 @@
 # Permissions
 
-The script has two layers of access control.
+Access to the panel is controlled by VORP groups (the `group` value on the character).
 
-## 1. Resource-wide group(s)
+## Coarse: `Config.PermissionGroup`
+
+The minimum to open the panel.
 
 ```lua
-Config.PermissionGroup = { 'admin' }
+Config.PermissionGroup = 'admin'
+-- or
+Config.PermissionGroup = { 'admin', 'superadmin', 'mod' }
 ```
 
-Anybody whose `character.group` is in this list can:
+Anyone with a group in this list can open `/jobcreator`. By default they see every tab.
 
-- Run `/jobcreator`.
-- Receive admin-only NUI broadcasts (e.g. extension snapshots).
-- See "Take ownership" / "Set me as employee" buttons.
+## Fine-grained: `Config.ButtonPermissions`
 
-`PermissionGroup` accepts either a single string (`'admin'`) or a table.
-
-## 2. Per-button gating
-
-Each top-level admin section has its own permission list in
-`Config.ButtonPermissions`. Leave a list empty to inherit
-`Config.PermissionGroup`.
+You can require a *different* group for each tab. Empty / missing → falls back to `Config.PermissionGroup`.
 
 ```lua
 Config.ButtonPermissions = {
-    dashboard       = {},
-    jobs            = {},
-    gangs           = {},
-    publicActions   = {},
-    itemCreator     = {},
-    customBlips     = {},
-    customPeds      = {},
-    audit           = {},
-    templates       = {},
-    backup          = {},
-    serverConfig    = {},
-    preferences     = {},
+    jobs           = { 'admin' },
+    gangs          = { 'admin' },
+    publicActions  = { 'admin' },
+    itemCreator    = { 'superadmin' },  -- only superadmins can create items
+    customBlips    = { 'admin' },
+    customPeds     = { 'admin' },
+    customVehicles = { 'superadmin' },
+    customHorses   = { 'superadmin' },
+    staffTools     = { 'superadmin' },
+    preferences    = { },               -- empty → anyone with PermissionGroup
+    personalmenu   = { },               -- the F7 menu is for every player
 }
 ```
 
-For example, to give your "job_manager" group access to jobs only:
+You can also edit this live in **Server config → Permissions**.
+
+## Custom permission logic
+
+If you want to gate the panel with your own rules (a database table, a discord role, etc.), implement the hook:
 
 ```lua
-Config.ButtonPermissions = {
-    jobs = { 'admin', 'job_manager' },
-    -- everything else inherits PermissionGroup = { 'admin' }
-}
+-- modules/editable/server.lua
+function CustomPermissionCheck(src)
+    -- return true → grant access
+    -- return false → deny
+    -- return nil → let the default check decide
+    if exports.my_acl:HasRole(src, 'jobs_manager') then return true end
+end
 ```
 
-## 3. Per-grade permissions inside an entity
+`CustomPermissionCheck` runs **in addition** to `Config.PermissionGroup` — returning `true` grants access even if the group check fails; returning `false` blocks regardless.
 
-Inside the entity editor → **Grades**, each grade can be flagged `isboss`
-which unlocks the `bossaction` interaction type and the boss menu.
+## Audit
 
-Granular permissions per grade (e.g. "this grade can open this stash") are
-configured at the **interaction** level, not the grade level: every
-job/gang interaction has a `minimumGrade` field.
-
-## 4. Audit
-
-Every write in the panel is recorded in `lo_audit` (player id, character
-name, action, before/after JSON). Browse it from the **Journal admin** tab
-or hit the [`getAuditLog`](/reference/exports) export.
+Every panel write (create / edit / delete) is logged to `lo_audit_log` with the staff id, name, action, target and a timestamp. See [Audit log](/guide/audit).

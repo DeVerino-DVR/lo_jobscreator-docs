@@ -1,27 +1,42 @@
 # Vehicles, horses, props, markers
 
-Catalogues used by the entity / interaction editors.
+The four catalogues. Each entry is a reusable definition you reference from interactions or place directly in the world.
 
-## Vehicles
+## Vehicles catalogue
 
-The vehicle picker (used by `vehicle_garage` interactions) reads from
-`web/public/vehicles/` thumbnails and the `data/vehlist.lua` server-side
-list. Add new vehicle models to the Lua list and matching `.webp`
-thumbnails in `web/public/vehicles/`.
+Used by `vehicle_garage` interactions.
 
-## Horses
+| Field | What it is |
+|---|---|
+| **Name** | Internal id. |
+| **Model** | RedM vehicle model hash / name. Check it against `data/vehlist.lua` if unsure. |
+| **Label** | What players see. |
+| **Category** | Wagon, cart, carriage… (free-form for grouping). |
+| **Price** | If the garage sells it, the price. |
+| **Restrictions** | Optional job / grade gating. |
 
-Same logic with `web/public/horses/` and `data/horseslist.lua`. Used by
-the `stable` interaction type.
+Garages reference vehicles **by name**. Renaming a catalogue entry breaks every garage that points to it.
 
-## Props
+## Horses catalogue
 
-Static props attached to interactions (e.g. a workbench prop on a craft
-point). Catalogued in `data/proplist.lua` with thumbnails in
-`web/public/props/`.
+Same idea, used by `stable` interactions.
 
-## Markers
+| Field | What it is |
+|---|---|
+| **Name** | Internal id. |
+| **Model** | RedM horse model. |
+| **Label** | Display name. |
+| **Coat** | Optional pre-defined coat / breed combo. |
+| **Price** | If the stable sells it. |
 
-Pre-defined marker shapes available to interactions. The catalogue is
-hardcoded — every RDR2 marker handle the script supports is exposed in the
-Combobox.
+## Props catalogue
+
+Static objects placed in the world (independent from interactions). Browse the prop list, pick a model, place it. Use it to decorate without spawning real interactable entities.
+
+Streaming follows `Config.Performance.propRenderDistance` and `maxRenderedProps`.
+
+## Markers catalogue
+
+3D markers placed in the world. Configure type (cone, circle, square), color, size, height. Use sparingly — markers redraw every frame so dozens of them in one area cost CPU.
+
+Streaming follows `Config.Performance.markerRenderDistance`.
